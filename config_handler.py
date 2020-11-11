@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import os
 import zlib
 import base64
 import hashlib
@@ -31,7 +32,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.6"
+VERSION = "0.0.1.7"
 
 class AES256(object):
     """
@@ -121,6 +122,7 @@ class Version1():
         :param str encoding: The encoding to be used.
         """
 
+        self.VERSION = "0.0.1.1"
         self.config_path = config_path
         self.isbase64 = isbase64
         self.encoding = encoding
@@ -289,6 +291,96 @@ class Version1():
 
                     else:
                         new_config.append(content)
+
+                result = ""
+                for line in new_config:
+                    if line == "":
+                        result += ''
+
+                    else:
+                        result += line + '\n'
+
+                try:
+                    self._save_config_file(result)
+
+                except Exception as error:
+                    print(error)
+                    return 1
+
+                else:
+                    return 0
+
+    def new(self):
+        """
+        Create a new configuration file.
+
+        :returns int: Error code
+        """
+
+        if os.path.exists(self.config_path):
+            print("File already exists")
+            return 2651
+
+        new_config = [
+            "# ConfigHandler configuration file",
+            "# Configuration File Version: 0.0.1.0"
+        ]
+        result = ""
+        for line in new_config:
+            if line == "":
+                result += ''
+
+            else:
+                result += line + '\n'
+
+        try:
+            self._save_config_file(result)
+
+        except Exception as error:
+            print(error)
+            return 1
+
+        else:
+            return 0
+
+    def add(self, variable=None, value=None):
+        """
+        Add a new variable and set value for it.
+
+        :param str variable: The variable name/key to modify/add.
+        :param str value: The desired value of <variable>.
+
+        :returns int: Error code
+        """
+
+        if variable is None or value is None:
+            return 11
+
+        else:
+            try:
+                variable = str(variable)
+                value = str(value)
+
+            except(TypeError, ValueError):
+                return 11
+
+            else:
+                contents = self._open_config_file().split('\n')
+                new_config = []
+                for content in contents:
+                    if content.startswith('#'):
+                        new_config.append(content)
+
+                    elif content.startswith(variable + '='):
+                        return 15
+
+                    elif content == "":
+                        new_config.append('')
+
+                    else:
+                        new_config.append(content)
+
+                new_config.append(variable + '=' + value)
 
                 result = ""
                 for line in new_config:
