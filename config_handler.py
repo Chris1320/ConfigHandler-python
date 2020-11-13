@@ -32,7 +32,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.8"  # Module version
+VERSION = "0.0.1.9"  # Module version
 
 class AES256(object):
     """
@@ -405,14 +405,15 @@ class Version2():
     The class containing methods to use the version 2 configuration file.
     """
 
-    def __init__(self, configpath):
+    def __init__(self, configpath, epass=None):
         """
         The initialization method of Version2() class.
 
         :param str configpath: The path of the configuration file to use.
+        :param str epass: The encryption password (Optional)
         """
 
-        self.VERSION = "0.0.0.7"  # Parser version
+        self.VERSION = "0.0.0.8"  # Parser version
 
         self.configpath = configpath
         self.__data = {
@@ -422,13 +423,30 @@ class Version2():
             "separator": None,
             "compression": None,
             "encryption": None,
-            "dictionary": None  # The encrypted form
+            "dictionary": None  # The encrypted form of the dictionary
         }
-        self.__dictionary = None  # The decrypted form
+        self.__dictionary = None  # The decrypted form of the dictionary
+        self.__epass = epass
         self.encoding = "utf-8"  # ? What if we include this inside config data?
 
         # A list of supported data types
         self.datatypes = ("str", "int", "float", "bool", "arr", "bin")
+        self.array_datatypes = ("str", "int", "float", "bool", "bin")
+        self.datatypes_conversion = {
+            "str": (str,),
+            "int": (int,),
+            "float": (float,),
+            "bool": (bool,),
+            "arr": (list, tuple),
+            "bin": (bytes,)
+        }
+        self.array_datatypes_conversion = {
+            "str": (str,),
+            "int": (int,),
+            "float": (float,),
+            "bool": (bool,),
+            "bin": (bytes,)
+        }
 
         # Configuration file fields and their types
         self.keynames = {
@@ -442,12 +460,14 @@ class Version2():
         }
 
         # A list of supported compression algorithms
-        self.compressions = ("zlib",)  # `huffman` soon to be supported
+        self.compressions = ("None", "zlib")  # `huffman` soon to be supported
 
         # A list of supported encryption algorithms
-        self.encryptions = ("aes256",)
+        self.encryptions = ("None", "aes256")
 
-    def __b64encode(self, to_encode):
+        self.default_separator = "|"  # The default separator
+
+    def __b64encode(self, to_encode, return_bytes=False):
         """
         Encode <to_encode> using Base64.
 
@@ -456,11 +476,13 @@ class Version2():
         :param float to_encode: The decimal to encode.*
         :param bool to_encode: The boolean to encode.*
         :param bytes to_encode: The bytes to encode.*
+        :param bool return_bytes: If True, this method will return the result in `bytes`.
 
         *The supported data types (except str and bytes) are converted to str.
         *str data types are converted to bytes.
 
         :returns str: The string version of the <encoded> (data type `bytes`) variable.
+        :returns bytes: The bytes version of the <encoded> variable.
         """
 
         if type(to_encode) in (str, int, float, bool):
@@ -473,7 +495,11 @@ class Version2():
             raise ValueError("Unsupported data type.")
 
         encoded = base64.b64encode(to_encode)
-        return str(encoded.decode(self.encoding))
+        if return_bytes:
+            return encoded
+
+        else:
+            return str(encoded.decode(self.encoding))
 
     def __b64decode(self, to_decode):
         """
@@ -563,14 +589,12 @@ encryption={self.__data["encryption"]}
             else:
                 continue
 
-    def __readdict(self, dictionary, epass=None):
+    def __readdict(self, dictionary):
         """
         Read the dictionary and store it in <self.__dictionary>.
 
         :param str dictionary: The dictionary in string data type.
         :param bytes dictionary: The dictionary in bytes data type.
-
-        :param str epass: Encryption password.
 
         :returns void:
         """
@@ -601,7 +625,7 @@ encryption={self.__data["encryption"]}
             decrypted = decompressed
 
         elif self.__data["encryption"] == "aes256":
-            decrypted = AES256(epass).decrypt(decompressed)
+            decrypted = AES256(self.__epass).decrypt(decompressed)
 
         else:
             raise ValueError("Invalid encryption algorithm name")
@@ -641,7 +665,7 @@ encryption={self.__data["encryption"]}
                                     raise ValueError("Unknown boolean state")
 
                             elif column[2] == "bin":
-                                arrayvalue = arrayvalue.encode(self.encoding)
+                                arrayvalue = self.__b64decode(arrayvalue).encode(self.encoding)
 
                             elif column[2] == "arr":
                                 # ? DEV0004: Should we implement nested arrays?
@@ -674,19 +698,18 @@ encryption={self.__data["encryption"]}
                         result[column[0]] = [column[1], convertedbool]
 
                     elif column[1] == "bin":
-                        result[column[0]] = [column[1], column[2].encode(self.encoding)]
+                        result[column[0]] = [column[1], self.__b64decode(column[2]).encode(self.encoding)]
 
                     else:
                         raise ValueError("Unknown data type")
 
         self.__dictionary = result
 
-    def __writedict(self, newdict, epass=None):
+    def __writedict(self, newdict):
         """
         Replace existing data from self.__data["dictionary"] with <newdict>.
 
         :param str newdict: The whole dictionary to write.
-        :param str epass: Encryption password (if self.encryption != None)
 
         :returns void:
         """
@@ -735,7 +758,7 @@ encryption={self.__data["encryption"]}
             pass
 
         elif self.__data["encryption"] == "aes256":
-            eresult = self.__b64encode(AES256(epass).encrypt(eresult))
+            eresult = self.__b64encode(AES256(self.__epass).encrypt(eresult))
 
         else:
             raise ValueError("Invalid encryption algorithm name")
@@ -752,12 +775,11 @@ encryption={self.__data["encryption"]}
 
         self.__data["dictionary"] = self.__b64encode(cresult)
 
-    def load(self, epass=None, load_dict=True):
+    def load(self, load_dict=True):
         """
         Get the current values of the configuration file.
         This method must be called first to work with the configuration file.
 
-        :param str epass: The encryption password (If the configuration file is encrypted.)
         :param bool load_dict: If True, this method will decrypt and decode the dictionary and store it to `self.__dictionary`.
 
         :returns void:
@@ -789,7 +811,7 @@ encryption={self.__data["encryption"]}
             elif cdata[i] == "+|+DICTIONARY+|+\n":
                 self.__data["dictionary"] = cdata[i + 1].replace('\n', '').encode(self.encoding)
                 if load_dict:
-                    self.__readdict(self.__data["dictionary"], epass)
+                    self.__readdict(self.__data["dictionary"], self.__epass)
 
                 else:
                     self.__dictionary = None
@@ -805,7 +827,24 @@ encryption={self.__data["encryption"]}
         :returns dict:
         """
 
-        return self.__data.pop("dictionary")
+        result = self.__data
+        result = result.pop("dictionary")
+        newver = result["version"].split('.')
+
+        # Convert result["version"] to a list of integers
+        newver2 = []
+        for _ in newver:
+            newver2.append(int(_))
+
+        result["version"] = newver2
+
+        if self.__dictionary is None:
+            result["loaded_dictionary"] = False
+
+        else:
+            result["loaded_dictionary"] = True
+
+        return result
 
     def get(self, key):
         """
@@ -871,16 +910,18 @@ encryption={self.__data["encryption"]}
                             raise ValueError("Unknown boolean state")
 
                     elif valuearrdatatype == "bin":
-                        value.append(_.encode(self.encoding))
+                        value.append(self.__b64decode(_).encode(self.encoding))
 
                     else:
                         raise ValueError("Invalid data type")
 
             elif value[0] == "bin":
-                value = value[1].encode(self.encoding)
+                value = self.__b64decode(value[1]).encode(self.encoding)
 
             else:
                 raise ValueError("Invalid data type")
+
+            return value
 
         else:
             raise ValueError("Invalid dictionary")
@@ -898,9 +939,19 @@ encryption={self.__data["encryption"]}
                                   - bool
                                   - arr (list)
                                   - bin (binary)
-        :param str value: The value of <key>.
+
+        :param str value: The value of <key>. (If <valuetype> is `str`)
+        :param int value: The value of <key>. (If <valuetype> is `int`)
+        :param float value: The value of <key>. (If <valuetype> is `float`)
+        :param bool value: The value of <key>. (If <valuetype> is `bool`)
+        :param tuple value: The value of <key>. (If <valuetype> is `arr`)
+        :param list value: The value of <key>. (If <valuetype> is `arr`)
+        :param bytes value: The value of <key>. (If <valuetype> is `bin`)
+
         :param str array_datatype: [OPTIONAL; If your valuetype is `arr`, this is required] The data type of the array objects (`arr` not supported)
         :param str array_separator: [OPTIONAL; If your valuetype is `arr`, this is required] The separator for the array
+
+        :returns void:
         """
 
         # <variable_name>|<datatype>|<value>
@@ -937,6 +988,9 @@ encryption={self.__data["encryption"]}
                                 keyvalue[3].append(float(_))
 
                             elif keyvalue[1] == "bool":
+                                # * NOTE: I am keeping this here because I might be wrong.
+                                # My mind is not working properly right now.
+                                """
                                 if int(_) == 0:
                                     keyvalue[3].append(False)
 
@@ -945,13 +999,28 @@ encryption={self.__data["encryption"]}
 
                                 else:
                                     raise ValueError("Unknown boolean state")
+                                """
+
+                                if _ == True:
+                                    keyvalue[3].append(1)
+
+                                elif _ == False:
+                                    keyvalue[3].append(0)
+
+                                else:
+                                    raise ValueError("Unknown boolean state")
 
                             elif keyvalue[1] == "bin":
                                 if type(_) is bytes:
-                                    keyvalue[3].append(_)
+                                    keyvalue[3].append(self.__b64encode(_, True))
 
                                 else:
                                     raise("array object is not in bytes data type")
+
+                            else:
+                                raise ValueError("Unsupported array datatype")
+
+                        self.__dictionary[key] = keyvalue
 
                     else:
                         raise TypeError("value must be a tuple or list when creating an array.")
@@ -967,15 +1036,18 @@ encryption={self.__data["encryption"]}
                         self.__dictionary[key] = [valuetype, float(value)]
 
                     elif valuetype == "bool":
-                        if value:
+                        if value == True:
                             self.__dictionary[key] = [valuetype, 1]
 
-                        else:
+                        elif value == False:
                             self.__dictionary[key] = [valuetype, 0]
+
+                        else:
+                            raise ValueError("Unknown boolean state")
 
                     elif valuetype == "bin":
                         if type(value) is bytes:
-                            self.__dictionary[key] = [valuetype, value]
+                            self.__dictionary[key] = [valuetype, self.__b64encode(value, True)]
 
                         else:
                             raise ValueError("value is not in bytes data type")
@@ -995,38 +1067,230 @@ encryption={self.__data["encryption"]}
 
         :param str key: The variable name/key to update.
         :param str value: The new value of <key>.
+
+        :returns void:
         """
 
         # <variable_name>|<datatype>|<value>
         # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
-        # ! TODO: DEV0003
-        oldkeyvalue = self.get(key)
-        if oldkeyvalue[0] == "str":
-            newkeyvalue = [oldkeyvalue[0], str(value)]
 
-        elif oldkeyvalue[0] == "int":
-            newkeyvalue = [oldkeyvalue[0], int(value)]
+        if self.__dictionary is None:
+            raise ValueError("The dictionary is not yet loaded!")
 
-        elif oldkeyvalue[0] == "float":
-            newkeyvalue = [oldkeyvalue[0], float(value)]
+        if self.__dictionary.get(key, None) is not None:
+            # More lazy security checks
+            if self.__data["separator"] in value:
+                raise ValueError("value must not contain the separator!")
 
-        elif oldkeyvalue[0] == "bool":
-            newkeyvalue = [oldkeyvalue[0], int(value)]
+            oldvalue = self.__data[key]
+            valuetype = oldvalue[0]
+            # Add to the dictionary
+            if valuetype == "arr":
+                array_datatype = oldvalue[1]
+                array_separator = oldvalue[2]
+                keyvalue = [valuetype, array_datatype, array_separator, []]
+                # Check the list
+                if type(value) in (tuple, list):
+                    for _ in value:
+                        if keyvalue[1] == "str":
+                            keyvalue[3].append(str(_))
 
-        elif oldkeyvalue[0] == "arr":
-            newkeyvalue = [oldkeyvalue[0], int(value)]
+                        elif keyvalue[1] == "int":
+                            keyvalue[3].append(int(_))
 
-        elif oldkeyvalue[0] == "bin":
-            newkeyvalue = [oldkeyvalue[0], int(value)]
+                        elif keyvalue[1] == "float":
+                            keyvalue[3].append(float(_))
+
+                        elif keyvalue[1] == "bool":
+                            if _ == True:
+                                keyvalue[3].append(1)
+
+                            elif _ == False:
+                                keyvalue[3].append(0)
+
+                            else:
+                                raise ValueError("Unknown boolean state")
+
+                        elif keyvalue[1] == "bin":
+                            if type(_) is bytes:
+                                keyvalue[3].append(self.__b64encode(_, True))
+
+                            else:
+                                raise("array object is not in bytes data type")
+
+                        else:
+                            raise ValueError("Unsupported array datatype")
+
+                    self.__dictionary[key] = keyvalue
+
+                else:
+                    raise TypeError("value must be a tuple or list when updating an array.")
+
+            else:
+                if valuetype == "str":
+                    self.__dictionary[key] = [valuetype, str(value)]
+
+                elif valuetype == "int":
+                    self.__dictionary[key] = [valuetype, int(value)]
+
+                elif valuetype == "float":
+                    self.__dictionary[key] = [valuetype, float(value)]
+
+                elif valuetype == "bool":
+                    if value == True:
+                        self.__dictionary[key] = [valuetype, 1]
+
+                    elif value == False:
+                        self.__dictionary[key] = [valuetype, 0]
+
+                    else:
+                        raise ValueError("Unknown boolean state")
+
+                elif valuetype == "bin":
+                    if type(value) is bytes:
+                        self.__dictionary[key] = [valuetype, self.__b64encode(value, True)]
+
+                    else:
+                        raise ValueError("value is not in bytes data type")
+
+                else:
+                    raise ValueError("Unsupported data type")
+
+        else:
+            ValueError("Key wasn't found in the dictionary")
 
     def remove(self, key):
         """
         Remove an existing variable.
 
         :param key: The key to remove.
+
+        :returns void:
         """
 
-    def new(self, name, author=None, separator="|", compression=None, encryption=None):
+        self.__dictionary.pop(key)
+
+    def new(self, name, author=None, separator=None, compression=None, encryption=None):
         """
         Create a new configuration file.
+
+        :param str name: The name of the configuration file.
+        :param str author: [Optional] The name of the configuration file's author.
+        :param str separator: The separator to be used in the configuration file. (Defaults to self.default_separator)
+        :param str compression: The compression algorithm name (See self.compressions)
+        :param str encryption: The encryption algorithm name (See self.encryptions)
         """
+
+        if not os.path.exists(self.configpath):
+            # Set the name
+            self.__data["name"] = name
+
+            # Set the author
+            if author is None:
+                self.__data["author"] = ""
+
+            else:
+                self.__data["author"] = author
+
+            # The parser version is used as the config file version.
+            # That way, we can drop support for older versions. (I hope we'll not do that)
+            self.__data["version"] = self.VERSION
+
+            # Set the separator
+            if separator is None:
+                self.__data["separator"] = self.default_separator
+
+            else:
+                self.__data["separator"] = separator
+
+            # Set the compression
+            if compression in self.compressions:
+                self.__data["compression"] = compression
+
+            else:
+                raise ValueError("Unsupported compression algorithm name")
+
+            # Set the encryption
+            if encryption in self.encryptions:
+                self.__data["encryption"] = encryption
+
+            else:
+                raise ValueError("Unsupported encryption algorithm name")
+
+            # Set the dictionary
+            self.import_dict({})
+
+            # Save the configuration file.
+            self.save()
+
+        else:
+            raise FileExistsError("The configuration file is already present")
+
+    def export_config(self):
+        """
+        Export the contents of the configuration file.
+
+        :returns dict: The configuration file content.
+        """
+
+        to_export = self.__data
+        to_export["dictionary"] = self.__dictionary
+
+        return to_export
+
+    def import_dict(self, dictionary):
+        """
+        Overwrite the contents of the dictionary.
+
+        :param dict dictionary: The new contents of the dictionary.
+
+        :returns void:
+        """
+
+        # <variable_name>|<datatype>|<value>
+        # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
+
+        for key in dictionary:
+            # Check if object's datatype is supported
+            if dictionary[key][0] in self.datatypes:
+                # Check if object is an array
+                if dictionary[key][0] == "arr":
+                    # Check if array's datatype is supported
+                    if dictionary[key][1] in self.array_datatypes:
+                        # Check if separator is a string
+                        if type(dictionary[key][2]) is str:
+                            # Check objects in array individually
+                            for value in dictionary[key][3]:
+                                if type(value) in self.array_datatypes_conversion[dictionary[key][1]]:
+                                    pass
+
+                                else:
+                                    raise ValueError("An array object's datatype does not match the array's datatype")
+
+                        else:
+                            raise ValueError("Separators must be a string")
+
+                    else:
+                        raise ValueError("Array datatype is not supported (see self.array_datatypes")
+
+                else:
+                    if type(dictionary[key][1]) in self.datatypes_conversion[dictionary[key][0]]:
+                        pass
+
+                    else:
+                        raise ValueError("New dictionary has unsupported data type")
+
+            else:
+                raise ValueError("Unsupported datatype")
+
+        self.__dictionary = dictionary
+
+    def save(self):
+        """
+        Save the current data to <self.configpath>.
+
+        :returns void:
+        """
+
+        self.__writedict(self.__dictionary)
+        self.__writeconfig()

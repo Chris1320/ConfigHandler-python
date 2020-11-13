@@ -157,3 +157,18 @@ Create, update, and remove values from a configuration file made by ConfigHandle
       ```plaintext
       <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
       ```
+
+## TODO List
+
+- Version 1
+  - [ ] BUG: The separator can be included in set() and add()'s
+    `variable`, and get()'s `data` parameters. (tl;dr: parameter safety checks)
+- Version 2
+  - [ ] IMPROVEMENT: Nested arrays
+  - [ ] IMPROVEMENT: Dictionary datatype
+  - [ ] IMPROVEMENT: Remove an array object directly from ConfigHandler
+  - [ ] IMPROVEMENT: Use `self.datatypes_conversion` instead of hardcoding the
+    datatypes in safety checks.
+  - [X] IMPROVEMENT: Move `epass` to \_\_init\_\_() method so that we don't ask
+    for the epass every method calls.
+  - [ ] IMPROVEMENT: Get all variable names (`get_all()` method?)
