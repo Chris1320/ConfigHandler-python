@@ -32,7 +32,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.7"
+VERSION = "0.0.1.8"  # Module version
 
 class AES256(object):
     """
@@ -122,7 +122,7 @@ class Version1():
         :param str encoding: The encoding to be used.
         """
 
-        self.VERSION = "0.0.1.1"
+        self.VERSION = "0.0.1.1"  # Parser version
         self.config_path = config_path
         self.isbase64 = isbase64
         self.encoding = encoding
@@ -412,7 +412,7 @@ class Version2():
         :param str configpath: The path of the configuration file to use.
         """
 
-        self.VERSION = "0.0.0.6"
+        self.VERSION = "0.0.0.7"  # Parser version
 
         self.configpath = configpath
         self.__data = {
@@ -429,6 +429,17 @@ class Version2():
 
         # A list of supported data types
         self.datatypes = ("str", "int", "float", "bool", "arr", "bin")
+
+        # Configuration file fields and their types
+        self.keynames = {
+            "name": (str,),
+            "author": (str,),
+            "version": (int, float),
+            "separator": (str,),
+            "compression": (str,),
+            "encryption": (str,),
+            "dictionary": (str,)
+        }
 
         # A list of supported compression algorithms
         self.compressions = ("zlib",)  # `huffman` soon to be supported
@@ -489,11 +500,13 @@ class Version2():
         """
         Read the configuration file.
 
-        :returns list: f.readlines()
+        :returns list: <self.configpath> content separated by newlines.
         """
 
         with open(self.configpath, 'r') as f:
-            return self.__b64decode(f.readlines())
+            data = self.__b64decode(f.read())
+
+        return data.split('\n')
 
     def __writeconfig(self):
         """
@@ -543,18 +556,8 @@ encryption={self.__data["encryption"]}
             else:
                 raise TypeError("configdata must be a dictionary.")
 
-        keynames = {
-            "name": (str,),
-            "author": (str,),
-            "version": (int, float),
-            "separator": (str,),
-            "compression": (str,),
-            "encryption": (str,),
-            "dictionary": (str,)
-        }
-
-        for key in keynames:
-            if type(configdata[key]) not in keynames[key]:
+        for key in self.keynames:
+            if type(configdata[key]) not in self.keynames[key]:
                 raise ValueError("The key does not have a valid value data type.")
 
             else:
@@ -641,7 +644,7 @@ encryption={self.__data["encryption"]}
                                 arrayvalue = arrayvalue.encode(self.encoding)
 
                             elif column[2] == "arr":
-                                # DEV0004: Should we implement nested arrays?
+                                # ? DEV0004: Should we implement nested arrays?
                                 raise ValueError("Nested arrays are not yet implemented.")
 
                             else:
