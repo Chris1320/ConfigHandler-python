@@ -6,9 +6,16 @@ import time
 import timeit
 import unittest
 
-shutil.copy("../config_handler.py", "./config_handler.py")
-import config_handler
-os.remove("config_handler.py")
+print("Current Working Directory: ", os.getcwd())
+
+## The lazy way to do it...
+try:
+    import config_handler
+
+except(ImportError):
+    shutil.copy("./config_handler.py", "test/config_handler.py")
+    import config_handler
+    os.remove("test/config_handler.py")
 
 
 class TestVersion1(unittest.TestCase):
@@ -114,14 +121,35 @@ class TestVersion1(unittest.TestCase):
         assert config_handler.Version1("testconfig-base64.conf", True).get("aBool1") == False
         assert config_handler.Version1("testconfig-base64.conf", True).get("aBool2") == True
 
-if __name__ == "__main__":
+
+class TestVersion2(unittest.TestCase):
+    # ! DEV0003
+    def test_create_config(self):
+        pass
+
+    def test_set_config_value(self):
+        pass
+
+    def test_get_config_value(self):
+        pass
+
+
+def run():
     suite = unittest.TestSuite()
+
+    # Version 1 test cases
     suite.addTest(TestVersion1("test_create_config"))
     suite.addTest(TestVersion1("test_get_config_value"))
     suite.addTest(TestVersion1("test_set_config_value"))
 
-    runner = unittest.TextTestRunner(failfast=True)
+    # Version 2 test cases
+
+    runner = unittest.TextTestRunner(verbosity=2, failfast=True)
     runner.run(suite)
 
     os.remove("testconfig.dat")
     os.remove("testconfig-base64.conf")
+
+
+if __name__ == "__main__":
+    run()
