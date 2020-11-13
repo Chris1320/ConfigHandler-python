@@ -65,7 +65,7 @@ Create, update, and remove values from a configuration file made by ConfigHandle
   It only contains the main key/value pairs with optional comments
   represented by `#` symbols.
 
-  ```plaintext
+  ```python
   # This is a comment.
   # This returns "value1" as a string.
   key1=value1
@@ -87,7 +87,7 @@ Create, update, and remove values from a configuration file made by ConfigHandle
   is compressed or even be encrypted. `#` symbols represent comments. Comments
   are not allowed inside the dictionary.
 
-  ```plaintext
+  ```python
   # This is a decoded and decompressed version of the configuration file.
 
   # The configuration info is formatted the same way as the version 1 configuration file format.
