@@ -12,13 +12,32 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 
   from config_handler import Version1
 
-  # "config.conf" is the configuration file path.
-  config = Version1("config.conf", True)
+  # Setup
+  config_path = "config.dat"  # This is our configuration file.
+  config = config_handler.Version1(config_path, False)
 
-  value = config.get("someKey")
+  # Creating a new configuration file
+  config.new()  # Create a new configuration file.
 
-  # Assuming that `value` is an integer
-  config.set("anotherKey", value + 1)
+  # Adding new variables
+  config.add("sampleVariable", "sampleValue")
+  config.add("another variable", 123456789)
+  config.add("decimals", 1234.5678)
+  config.add("lazymode", True)
+
+  # Getting variables
+  print(config.get("sampleVariable"))
+  print(config.get("decimals") + 987654321)
+  if config.get("lazymode"):
+      print("The value of `lazymode` is True.")
+
+  else:
+      print("You're not lazy.")
+
+  # Updating existing variables
+  print("This is the old value: {0}".format(config.get("sampleVariable")))
+  config.set("sampleVariable", "NewValue")
+  print("This is the new value: {0}".format(config.get("sampleVariable")))
   ```
 
 - Version 2:
