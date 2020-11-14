@@ -47,7 +47,42 @@ Create, update, and remove values from a configuration file made by ConfigHandle
   from config_handler import Version2
 
   # "config.conf" is the configuration file path.
-  config = Version2("config.conf")
+  config = Version2("config.conf", "aPasswordHere")  # The password is optional (required if encryption is not `None`)
+  
+  # Create a new configuration file
+  config.new(name="Test Configuration File",
+            author="Chris1320",
+            compression="zlib",
+            encryption="aes256"
+            )
+            
+  # Always load the configuration file or else you won't be able to work with it.
+  config.load()
+
+  # Adding new variables
+  config.add("aVariableName", "str", "Hello, world!")
+  config.add("Another name", "int", 645798)
+  
+  # Getting variables
+  print(config.get("aVariableName"))
+  print(config.get("Another name") * 2)
+  
+  # Updating existing variables
+  config.update("aVariableName", "New string")
+  config.update("Another name", 1234)
+  
+  # Configuration File Information
+  for key in config.info():
+      print("{0}: {1}".format(key, config.info()[key])
+      
+  # Remove a variable and it's value
+  config.remove("Another name")
+  
+  # Export and import dictionaries (configuration file dictionaries)
+  exported_data = config.export_config()
+  
+  # For example, `dictionary_from_another_confighandler` is from another instance of ConfigHandler.
+  config.import_dict(dictionary_from_another_confighandler)
   ```
 
 ## Configuration File Structure
