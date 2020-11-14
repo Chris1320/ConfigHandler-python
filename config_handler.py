@@ -550,8 +550,7 @@ compression={self.__data["compression"]}
 encryption={self.__data["encryption"]}
 
 +|+DICTIONARY+|+
-{self.__data["dictionary"]}
-"""
+{self.__data["dictionary"]}\n"""
 
         # Write `newdata` to `self.configpath`.
         with open(self.configpath, 'w') as f:
