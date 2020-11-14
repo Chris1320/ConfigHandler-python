@@ -32,7 +32,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.9"  # Module version
+VERSION = "0.0.1.10"  # Module version
 
 class AES256(object):
     """
@@ -221,7 +221,7 @@ class Version1():
 
                 elif content.startswith(data + '='):
                     # This if-else statement below is *specially* for booleans.
-                    # DEV0001: Might introduce bugs in the future!
+                    # ! DEV0001: Might introduce bugs in the future!
                     if content.replace('\n', '').partition('=')[2].lower() == "true":
                         return True
 
@@ -262,7 +262,7 @@ class Version1():
         :param str variable: The variable name/key to modify/add.
         :param str value: The desired value of <variable>.
 
-        :returns int: Error code
+        :returns int, str: Error code and error description (if there is one.)
         """
 
         if variable is None or value is None:
@@ -304,8 +304,7 @@ class Version1():
                     self._save_config_file(result)
 
                 except Exception as error:
-                    print(error)
-                    return 1
+                    return 1, str(error)
 
                 else:
                     return 0
@@ -314,12 +313,11 @@ class Version1():
         """
         Create a new configuration file.
 
-        :returns int: Error code
+        :returns int, str: Error code and an error description, if there is one.
         """
 
         if os.path.exists(self.config_path):
-            print("File already exists")
-            return 2651
+            return 2651, "File already exists"
 
         new_config = [
             "# ConfigHandler configuration file",
@@ -337,8 +335,7 @@ class Version1():
             self._save_config_file(result)
 
         except Exception as error:
-            print(error)
-            return 1
+            return 1, str(error)
 
         else:
             return 0
@@ -350,7 +347,7 @@ class Version1():
         :param str variable: The variable name/key to modify/add.
         :param str value: The desired value of <variable>.
 
-        :returns int: Error code
+        :returns int, str: Error code and the error description if there is one.
         """
 
         if variable is None or value is None:
@@ -394,8 +391,7 @@ class Version1():
                     self._save_config_file(result)
 
                 except Exception as error:
-                    print(error)
-                    return 1
+                    return 1, str(error)
 
                 else:
                     return 0
@@ -413,7 +409,7 @@ class Version2():
         :param str epass: The encryption password (Optional)
         """
 
-        self.VERSION = "0.0.0.8"  # Parser version
+        self.VERSION = "0.0.0.9"  # Parser version
 
         self.configpath = configpath
         self.__data = {
@@ -452,7 +448,7 @@ class Version2():
         self.keynames = {
             "name": (str,),
             "author": (str,),
-            "version": (int, float),
+            "version": (str,),
             "separator": (str,),
             "compression": (str,),
             "encryption": (str,),
@@ -508,7 +504,7 @@ class Version2():
         :param str to_decode: The string to decode.
         :param bytes to_decode: The bytes to decode.
 
-        :returns str: The decoded form of <to_decode>.
+        :returns bytes: The decoded form of <to_decode> in `bytes` data type.
         """
 
         if type(to_decode) is str:
@@ -532,7 +528,7 @@ class Version2():
         with open(self.configpath, 'r') as f:
             data = self.__b64decode(f.read())
 
-        return data.split('\n')
+        return data.decode().split('\n')
 
     def __writeconfig(self):
         """
@@ -608,10 +604,15 @@ encryption={self.__data["encryption"]}
         else:
             raise TypeError("Invalid dictionary!")
 
+        if dictionary == b'':
+            # A lazy guess if the dictionary is empty.
+            self.__dictionary = {}
+            return None
+
         # Decompression
-        dictionary = self.__b64decode(dictionary.encode(self.encoding))
+        dictionary = self.__b64decode(dictionary)
         if self.__data["compression"] == "None":
-            decompressed = dictionary.encode(self.encoding)
+            decompressed = dictionary
 
         elif self.__data["compression"] == "zlib":
             decompressed = zlib.decompress(dictionary)
@@ -620,7 +621,7 @@ encryption={self.__data["encryption"]}
             raise ValueError("Invalid compression algorithm name")
 
         # Decryption
-        decompressed = self.b64decode(decompressed).encode(self.encoding)
+        decompressed = self.__b64decode(decompressed)
         if self.__data["encryption"] == "None":
             decrypted = decompressed
 
@@ -630,7 +631,15 @@ encryption={self.__data["encryption"]}
         else:
             raise ValueError("Invalid encryption algorithm name")
 
-        plaintext = self.__b64decode(decrypted)
+        #plaintext = self.__b64decode(decrypted)  # .decode(self.encoding)
+        plaintext = decrypted
+        if type(plaintext) is bytes:
+            plaintext = plaintext.decode()
+
+        if plaintext == "":
+            # Another lazy check if plaintext is empty.
+            self.__dictionary = {}
+            return None
 
         # parse the plaintext
         i = 0
@@ -638,67 +647,73 @@ encryption={self.__data["encryption"]}
         # <variable_name>|<datatype>|<value>
         # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
         for line in plaintext.split('\n'):
-            line = line.split(self.__data["separator"])
-            for column in line:
-                if column[1] in self.datatypes:
-                    if column[1] == "arr":
-                        result[column[0]] = [column[1], column[2], column[3], []]
-                        arrayvalues = column[4].split(column[3])
+            if plaintext.split('\n') in ([], ['']):
+                break
+
+            else:
+                # DEV0003 & DEV0005
+                print('===========================')
+                print(line.split(self.__data["separator"]))
+                line = line.split(self.__data["separator"])
+                if line[1] in self.datatypes:
+                    if line[1] == "arr":
+                        result[line[0]] = [line[1], line[2], line[3], []]
+                        arrayvalues = line[4].split(line[3])
                         for arrayvalue in arrayvalues:
-                            if column[2] == "str":
+                            if line[2] == "str":
                                 arrayvalue = str(arrayvalue)
 
-                            elif column[2] == "int":
+                            elif line[2] == "int":
                                 arrayvalue = int(arrayvalue)
 
-                            elif column[2] == "float":
+                            elif line[2] == "float":
                                 arrayvalue = float(arrayvalue)
 
-                            elif column[2] == "bool":
-                                if arrayvalue == 0:
+                            elif line[2] == "bool":
+                                if int(arrayvalue) == 0:
                                     arrayvalue = False
 
-                                elif arrayvalue == 1:
+                                elif int(arrayvalue) == 1:
                                     arrayvalue = True
 
                                 else:
                                     raise ValueError("Unknown boolean state")
 
-                            elif column[2] == "bin":
-                                arrayvalue = self.__b64decode(arrayvalue).encode(self.encoding)
+                            elif line[2] == "bin":
+                                arrayvalue = self.__b64decode(arrayvalue)
 
-                            elif column[2] == "arr":
+                            elif line[2] == "arr":
                                 # ? DEV0004: Should we implement nested arrays?
                                 raise ValueError("Nested arrays are not yet implemented.")
 
                             else:
                                 raise ValueError("Invalid array data type")
 
-                            result[column[0]][3].append(arrayvalue)
+                            result[line[0]][3].append(arrayvalue)
 
-                    elif column[1] == "str":
-                        result[column[0]] = [column[1], column[2]]
+                    elif line[1] == "str":
+                        result[line[0]] = [line[1], line[2]]
 
-                    elif column[1] == "int":
-                        result[column[0]] = [column[1], int(column[2])]
+                    elif line[1] == "int":
+                        result[line[0]] = [line[1], int(line[2])]
 
-                    elif column[1] == "float":
-                        result[column[0]] = [column[1], float(column[2])]
+                    elif line[1] == "float":
+                        result[line[0]] = [line[1], float(line[2])]
 
-                    elif column[1] == "bool":
-                        if column[2] == 0:
+                    elif line[1] == "bool":
+                        if int(line[2]) == 0:
                             convertedbool = False
 
-                        elif column[2] == 1:
+                        elif int(line[2]) == 1:
                             convertedbool = True
 
                         else:
                             raise ValueError("Unknown boolean state")
 
-                        result[column[0]] = [column[1], convertedbool]
+                        result[line[0]] = [line[1], convertedbool]
 
-                    elif column[1] == "bin":
-                        result[column[0]] = [column[1], self.__b64decode(column[2]).encode(self.encoding)]
+                    elif line[1] == "bin":
+                        result[line[0]] = [line[1], self.__b64decode(line[2])]
 
                     else:
                         raise ValueError("Unknown data type")
@@ -739,26 +754,24 @@ encryption={self.__data["encryption"]}
                 result += f'{variable_name}{self.__data["separator"]}{datatype}{self.__data["separator"]}{array_datatype}{self.__data["separator"]}{array_separator}{self.__data["separator"]}'
                 _ = 0
                 while _ < len(values):
-                    result += values[_]
+                    result += str(values[_])
                     if _ < (len(values) - 1):
-                        result += '\n'
+                        result += self.__data["separator"]
 
                     else:
-                        result += self.__data["separator"]
+                        result += '\n'
                     _ += 1
 
             else:
                 value = newdict[variable_name][1]
                 result += f'{variable_name}{self.__data["separator"]}{datatype}{self.__data["separator"]}{value}\n'
 
-        # Encode the result
-        eresult = self.__b64encode(result)
         # Encrypt the result
         if self.__data["encryption"] == "None":
-            pass
+            eresult = self.__b64encode(result, True)
 
         elif self.__data["encryption"] == "aes256":
-            eresult = self.__b64encode(AES256(self.__epass).encrypt(eresult))
+            eresult = self.__b64encode(AES256(self.__epass).encrypt(self.__b64encode(result)), True)
 
         else:
             raise ValueError("Invalid encryption algorithm name")
@@ -797,7 +810,7 @@ encryption={self.__data["encryption"]}
                 self.__data["author"] = str(cdata[i].partition('=')[2].replace('\n', ''))
 
             elif cdata[i].startswith("version="):
-                self.__data["version"] = float(cdata[i].partition('=')[2].replace('\n', ''))
+                self.__data["version"] = str(cdata[i].partition('=')[2].replace('\n', ''))
 
             elif cdata[i].startswith("separator="):
                 self.__data["separator"] = str(cdata[i].partition('=')[2].replace('\n', ''))
@@ -808,17 +821,18 @@ encryption={self.__data["encryption"]}
             elif cdata[i].startswith("encryption="):
                 self.__data["encryption"] = str(cdata[i].partition('=')[2].replace('\n', ''))
 
-            elif cdata[i] == "+|+DICTIONARY+|+\n":
+            elif cdata[i] == "+|+DICTIONARY+|+":
                 self.__data["dictionary"] = cdata[i + 1].replace('\n', '').encode(self.encoding)
                 if load_dict:
-                    self.__readdict(self.__data["dictionary"], self.__epass)
+                    self.__readdict(self.__data["dictionary"])
 
                 else:
                     self.__dictionary = None
 
             else:
-                i += 1
-                continue
+                pass
+
+            i += 1
 
     def info(self):
         """
@@ -827,8 +841,11 @@ encryption={self.__data["encryption"]}
         :returns dict:
         """
 
+        if self.__dictionary is None or self.__data is None:
+            raise ValueError("The configuration file is not yet loaded!")
+
         result = self.__data
-        result = result.pop("dictionary")
+        result.pop("dictionary")
         newver = result["version"].split('.')
 
         # Convert result["version"] to a list of integers
@@ -860,8 +877,8 @@ encryption={self.__data["encryption"]}
         :returns bytes: Returns type(bytes) if the <key>'s datatype is `bin`.
         """
 
-        if self.__dictionary is None:
-            raise ValueError("The dictionary is not yet loaded!")
+        if self.__dictionary is None or self.__data is None:
+            raise ValueError("The configuration file is not yet loaded!")
 
         elif type(self.__dictionary) is dict:
             value = self.__dictionary[key]
@@ -957,13 +974,29 @@ encryption={self.__data["encryption"]}
         # <variable_name>|<datatype>|<value>
         # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
 
-        if self.__dictionary is None:
-            raise ValueError("The dictionary is not yet loaded!")
+        if type(key) is not str:
+            raise TypeError("key is not a string")
+
+        if self.__dictionary is None or self.__data is None:
+            raise ValueError("The configuration file is not yet loaded!")
 
         if self.__dictionary.get(key, None) is None:
             # Some lazy security checks
-            if self.__data["separator"] in value:
-                raise ValueError("value must not contain the separator!")
+            if type(value) in (tuple, list):
+                for v in value:
+                    if array_datatype == "bin":
+                        pass
+
+                    else:
+                        if self.__data["separator"] in str(v):
+                            raise ValueError("value must not contain the separator!")
+
+            elif type(value) is bytes:
+                pass
+
+            else:
+                if self.__data["separator"] in str(value):
+                    raise ValueError("value must not contain the separator!")
 
             if self.__data["separator"] in key:
                 raise ValueError("key must not contain the separator!")
@@ -1074,8 +1107,8 @@ encryption={self.__data["encryption"]}
         # <variable_name>|<datatype>|<value>
         # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
 
-        if self.__dictionary is None:
-            raise ValueError("The dictionary is not yet loaded!")
+        if self.__dictionary is None or self.__data is None:
+            raise ValueError("The configuration file is not yet loaded!")
 
         if self.__dictionary.get(key, None) is not None:
             # More lazy security checks
@@ -1170,7 +1203,7 @@ encryption={self.__data["encryption"]}
 
         self.__dictionary.pop(key)
 
-    def new(self, name, author=None, separator=None, compression=None, encryption=None):
+    def new(self, name, author=None, separator=None, compression="None", encryption="None"):
         """
         Create a new configuration file.
 

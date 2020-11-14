@@ -19,7 +19,6 @@ except(ImportError):
 
 class TestVersion1(unittest.TestCase):
     def test1_create_config(self):
-        print("\n[TEST] Running test1_create_config()")
         if config_handler.Version1("test/v1-testconfig.dat", False).new() != 0:
             raise Exception("File already exists")
 
@@ -33,7 +32,6 @@ class TestVersion1(unittest.TestCase):
         if config_handler.Version1("test/v1-testconfig.dat", False).add("aBool2", False) != 0: raise Exception("Failed to set variable")
 
     def test1_get_config_value(self):
-        print("\n[TEST] Running test1_get_config_value()")
         self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString1"), "Hello, world!")
         self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString2"), "Hello again!")
         self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("anInt1"), 684)
@@ -45,7 +43,6 @@ class TestVersion1(unittest.TestCase):
         self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("nonexistentvariable"), None)
 
     def test1_set_config_value(self):
-        print("\n[TEST] Running test1_set_config_value()")
         self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString1"), "Hello, world!")
         self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString2"), "Hello again!")
         self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("anInt1"), 684)
@@ -74,7 +71,6 @@ class TestVersion1(unittest.TestCase):
         self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aBool2"), True)
 
     def test2_create_config(self):
-        print("\n[TEST] Running test2_create_config()")
         if config_handler.Version1("test/v1-testconfig-base64.conf", True).new() != 0:
             raise Exception("File already exists")
 
@@ -88,7 +84,6 @@ class TestVersion1(unittest.TestCase):
         if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("aBool2", False) != 0: raise Exception("Failed to set variable")
 
     def test2_get_config_value(self):
-        print("\n[TEST] Running test2_get_config_value()")
         self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString1"), "Hello, world!")
         self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString2"), "Hello again!")
         self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("anInt1"), 684)
@@ -100,7 +95,6 @@ class TestVersion1(unittest.TestCase):
         self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("nonexistentvariable"), None)
 
     def test2_set_config_value(self):
-        print("\n[TEST] Running test2_set_config_value()")
         self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString1"), "Hello, world!")
         self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString2"), "Hello again!")
         self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("anInt1"), 684)
@@ -191,7 +185,7 @@ class TestVersion2(unittest.TestCase):
         testfile6: {
             "name": "Test Configuration File #6",
             "author": "Chris1320",
-            "separator": ",",
+            "separator": "`",
             "compression": "zlib",
             "encryption": "aes256",
             "password": "testP@ssword123"
@@ -199,8 +193,6 @@ class TestVersion2(unittest.TestCase):
     }
 
     def test_create_config(self):
-        print("\n[TEST] Calling `config_handler.Version2().new()`...")
-
         config1 = config_handler.Version2(self.testfile1)
         config2 = config_handler.Version2(self.testfile2)
         config3 = config_handler.Version2(self.testfile3)
@@ -239,13 +231,12 @@ class TestVersion2(unittest.TestCase):
         config6.new(
             name="Test Configuration File #6",
             author="Chris1320",
-            separator=",",
+            separator="`",
             compression="zlib",
             encryption="aes256"
         )
 
     def test_info_config(self):
-        print("\n[TEST] Testing info() method...")
         for testfile in self.testfileinfos:
             testinfo = self.testfileinfos[testfile]
 
@@ -255,6 +246,7 @@ class TestVersion2(unittest.TestCase):
             else:
                 config = config_handler.Version2(testfile, epass=self.testfileinfos[testfile]["password"])
 
+            config.load()
             configinfo = config.info()
 
             if testinfo["separator"] is None:
@@ -275,7 +267,6 @@ class TestVersion2(unittest.TestCase):
             self.assertEqual(configinfo["encryption"], testinfo["encryption"])
 
     def test_add_config(self):
-        print("\n[TEST] Testing add() method...")
         with open(self.testphoto1, 'rb') as f:
             testphoto = f.read()
 
@@ -300,7 +291,6 @@ class TestVersion2(unittest.TestCase):
             config.save()
 
     def test_get_config(self):
-        print("\n[TEST] Testing get() method...")
         with open(self.testphoto1, 'rb') as f:
             testphoto = f.read()
 
@@ -336,7 +326,6 @@ class TestVersion2(unittest.TestCase):
             self.assertEqual(config.get("testVariable_bin")[0], testphoto)
 
     def test_load_config(self):
-        print("\n[TEST] Testing load() method...")
         for testfile in self.testfiles:
             if self.testfileinfos[testfile]["password"] is None:
                 config = config_handler.Version2(testfile)
@@ -349,7 +338,6 @@ class TestVersion2(unittest.TestCase):
             self.assertFalse(config.info()["loaded_dictionary"])
 
     def test_update_config(self):
-        print("\n[TEST] Testing update() method...")
         with open(self.testphoto1, 'rb') as f:
             testphoto = f.read()
 
@@ -488,7 +476,6 @@ class TestVersion2(unittest.TestCase):
                     self.assertEqual(config.get(testvar), newvalue)
 
     def test_import_and_export_config(self):
-        print("\n[TEST] Testing export_config() and import_dict() methods...")
         if self.testfileinfos[self.testfile6]["password"] is None:
                 config = config_handler.Version2(self.testfile6)
 
@@ -562,7 +549,7 @@ class TestVersion2(unittest.TestCase):
             config.load()
             for var in testvars:
                 config.get(var)
-                config.remove(ver)
+                config.remove(var)
                 try:
                     config.get(var)
 
