@@ -32,7 +32,8 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.10"  # Module version
+VERSION = "0.0.1.11"  # Module version
+
 
 class AES256(object):
     """
@@ -409,7 +410,7 @@ class Version2():
         :param str epass: The encryption password (Optional)
         """
 
-        self.VERSION = "0.0.0.9"  # Parser version
+        self.VERSION = "0.0.0.10"  # Parser version
 
         self.configpath = configpath
         self.__data = {
@@ -646,13 +647,10 @@ encryption={self.__data["encryption"]}
         # <variable_name>|<datatype>|<value>
         # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
         for line in plaintext.split('\n'):
-            if plaintext.split('\n') in ([], ['']):
+            if plaintext.split('\n') in ([], ['']) or len(line) < 3:
                 break
 
             else:
-                # DEV0003 & DEV0005
-                print('===========================')
-                print(line.split(self.__data["separator"]))
                 line = line.split(self.__data["separator"])
                 if line[1] in self.datatypes:
                     if line[1] == "arr":
@@ -755,7 +753,8 @@ encryption={self.__data["encryption"]}
                 while _ < len(values):
                     result += str(values[_])
                     if _ < (len(values) - 1):
-                        result += self.__data["separator"]
+                        # result += self.__data["separator"]
+                        result += array_separator
 
                     else:
                         result += '\n'
@@ -902,7 +901,8 @@ encryption={self.__data["encryption"]}
 
             elif value[0] == "arr":
                 # result[column[0]] = [column[1], column[2], column[3], []]
-                newvalue = value[3].split(value[2])
+                # newvalue = value[3].split(value[2])
+                newvalue = value[3]
                 valuearrdatatype = value[1]
                 value = []
                 for _ in newvalue:
