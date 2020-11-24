@@ -145,7 +145,6 @@ class TestVersion2(unittest.TestCase):
         testfile1: {
             "name": "Test Configuration File #1",
             "author": "",
-            "separator": None,
             "compression": "None",
             "encryption": "None",
             "password": None
@@ -153,7 +152,6 @@ class TestVersion2(unittest.TestCase):
         testfile2: {
             "name": "Test Configuration File #2",
             "author": "Chris1320",
-            "separator": None,
             "compression": "None",
             "encryption": "None",
             "password": None
@@ -161,7 +159,6 @@ class TestVersion2(unittest.TestCase):
         testfile3: {
             "name": "Test Configuration File #3",
             "author": "Chris1320",
-            "separator": None,
             "compression": "zlib",
             "encryption": "None",
             "password": None
@@ -169,7 +166,6 @@ class TestVersion2(unittest.TestCase):
         testfile4: {
             "name": "Test Configuration File #4",
             "author": "Chris1320",
-            "separator": None,
             "compression": "None",
             "encryption": "aes256",
             "password": "testpassword123"
@@ -177,7 +173,6 @@ class TestVersion2(unittest.TestCase):
         testfile5: {
             "name": "Test Configuration File #5",
             "author": "Chris1320",
-            "separator": None,
             "compression": "zlib",
             "encryption": "aes256",
             "password": "73$T_Password123"
@@ -185,7 +180,6 @@ class TestVersion2(unittest.TestCase):
         testfile6: {
             "name": "Test Configuration File #6",
             "author": "Chris1320",
-            "separator": "`",
             "compression": "zlib",
             "encryption": "aes256",
             "password": "testP@ssword123"
@@ -231,7 +225,6 @@ class TestVersion2(unittest.TestCase):
         config6.new(
             name="Test Configuration File #6",
             author="Chris1320",
-            separator="`",
             compression="zlib",
             encryption="aes256"
         )
@@ -249,9 +242,6 @@ class TestVersion2(unittest.TestCase):
             config.load()
             configinfo = config.info()
 
-            if testinfo["separator"] is None:
-                testinfo["separator"] = config.default_separator
-
             self.assertEqual(configinfo["name"], testinfo["name"])
             self.assertEqual(configinfo["author"], testinfo["author"])
 
@@ -262,7 +252,6 @@ class TestVersion2(unittest.TestCase):
             self.assertEqual(type(configinfo["version"][2]), int)
             self.assertEqual(type(configinfo["version"][3]), int)
 
-            self.assertEqual(configinfo["separator"], testinfo["separator"])
             self.assertEqual(configinfo["compression"], testinfo["compression"])
             self.assertEqual(configinfo["encryption"], testinfo["encryption"])
 
@@ -282,11 +271,11 @@ class TestVersion2(unittest.TestCase):
             config.add("testVariable_int", "int", 1234)
             config.add("testVariable_float", "float", 1234.5678)
             config.add("testVariable_bool", "bool", True)
-            config.add("testVariable_arr1", "arr", ("Test1", "Test2"), "str", "=")
-            config.add("testVariable_arr2", "arr", (453, 784, 5468, 12, 3), "int", "=")
-            config.add("testVariable_arr3", "arr", (3.14, 5.48), "float", "=")
-            config.add("testVariable_arr4", "arr", (True, False, False, True), "bool", "=")
-            config.add("testVariable_arr5", "arr", (b'Test String', testphoto, b"Another string", b'one last'), "bin", "=")
+            config.add("testVariable_arr1", "arr", ("Test1", "Test2"), "str")
+            config.add("testVariable_arr2", "arr", (453, 784, 5468, 12, 3), "int")
+            config.add("testVariable_arr3", "arr", (3.14, 5.48), "float")
+            config.add("testVariable_arr4", "arr", (True, False, False, True), "bool")
+            config.add("testVariable_arr5", "arr", (b'Test String', testphoto, b"Another string", b'one last'), "bin")
             config.add("testVariable_bin", "bin", testphoto)
             config.save()
 
@@ -490,7 +479,6 @@ class TestVersion2(unittest.TestCase):
         newconfig.new(
             "Test Configuration File #7 (Data Imported from #6)",
             "Somebody",
-            "<?>",
             "zlib",
             "None"
         )
@@ -507,7 +495,6 @@ class TestVersion2(unittest.TestCase):
         self.assertEqual(type(newconfig.info()["version"][2]), int)
         self.assertEqual(type(newconfig.info()["version"][3]), int)
 
-        self.assertEqual(newconfig.info()["separator"], "<?>")
         self.assertEqual(newconfig.info()["compression"], "zlib")
         self.assertEqual(newconfig.info()["encryption"], "None")
 

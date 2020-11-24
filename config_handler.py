@@ -33,7 +33,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.14"  # Module version
+VERSION = "0.0.1.15"  # Module version
 
 
 class AES256(object):
@@ -411,14 +411,13 @@ class Version2():
         :param str epass: The encryption password (Optional)
         """
 
-        self.VERSION = "0.0.0.13"  # Parser version
+        self.VERSION = "0.0.0.14"  # Parser version
 
         self.configpath = configpath
         self.__data = {
             "name": None,
             "author": None,
             "version": None,
-            "separator": None,
             "compression": None,
             "encryption": None,
             "dictionary": None  # The encrypted form of the dictionary
@@ -451,7 +450,6 @@ class Version2():
             "name": (str,),
             "author": (str,),
             "version": (str,),
-            "separator": (str,),
             "compression": (str,),
             "encryption": (str,),
             "dictionary": (str,)
@@ -462,8 +460,6 @@ class Version2():
 
         # A list of supported encryption algorithms
         self.encryptions = ("None", "aes256")
-
-        self.default_separator = "|"  # The default separator
 
     def __b64encode(self, to_encode, return_bytes=False):
         """
@@ -626,7 +622,7 @@ class Version2():
             return None
 
         # <variable_name>|<datatype>|<value>
-        # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
+        # <variable_name>|<datatype>|<array_datatype>|<values>
         self.__dictionary = json.loads(decrypted)
 
     def __writedict(self):
@@ -751,9 +747,7 @@ class Version2():
                     raise ValueError("Unknown boolean state")
 
             elif value[0] == "arr":
-                # result[column[0]] = [column[1], column[2], column[3], []]
-                # newvalue = value[3].split(value[2])
-                newvalue = value[3]
+                newvalue = value[2]
                 valuearrdatatype = value[1]
                 value = []
                 for _ in newvalue:
@@ -793,7 +787,7 @@ class Version2():
         else:
             raise ValueError("Invalid dictionary")
 
-    def add(self, key, valuetype, value, array_datatype=None, array_separator=None):
+    def add(self, key, valuetype, value, array_datatype=None):
         """
         Add a new variable.
 
@@ -816,13 +810,12 @@ class Version2():
         :param bytes value: The value of <key>. (If <valuetype> is `bin`)
 
         :param str array_datatype: [OPTIONAL; If your valuetype is `arr`, this is required] The data type of the array objects (`arr` not supported)
-        :param str array_separator: [OPTIONAL; If your valuetype is `arr`, this is required] The separator for the array
 
         :returns void:
         """
 
         # <variable_name>|<datatype>|<value>
-        # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
+        # <variable_name>|<datatype>|<array_datatype>|<values>
 
         if type(key) is not str:
             raise TypeError("key is not a string")
@@ -831,58 +824,38 @@ class Version2():
             raise ValueError("The configuration file is not yet loaded!")
 
         if self.__dictionary.get(key, None) is None:
-            # Some lazy security checks
-            if type(value) in self.datatypes_conversion["arr"]:
-                for v in value:
-                    if array_datatype == "bin":
-                        pass
-
-                    else:
-                        if self.__data["separator"] in str(v):
-                            raise ValueError("value must not contain the separator!")
-
-            elif type(value) in self.datatypes_conversion["bin"]:
-                pass
-
-            else:
-                if self.__data["separator"] in str(value):
-                    raise ValueError("value must not contain the separator!")
-
-            if self.__data["separator"] in key:
-                raise ValueError("key must not contain the separator!")
-
             # Add to the dictionary
             if valuetype in self.datatypes:
                 if valuetype == "arr":
-                    if array_datatype is None or array_separator is None:
-                        raise ValueError("array_datatype and array_separator is required to create an array!")
+                    if array_datatype is None:
+                        raise ValueError("array_datatype is required to create an array!")
 
-                    keyvalue = [valuetype, array_datatype, array_separator, []]
+                    keyvalue = [valuetype, array_datatype, []]
                     # Check the list
                     if type(value) in self.datatypes_conversion["arr"]:
                         for _ in value:
                             if keyvalue[1] == "str":
-                                keyvalue[3].append(str(_))
+                                keyvalue[2].append(str(_))
 
                             elif keyvalue[1] == "int":
-                                keyvalue[3].append(int(_))
+                                keyvalue[2].append(int(_))
 
                             elif keyvalue[1] == "float":
-                                keyvalue[3].append(float(_))
+                                keyvalue[2].append(float(_))
 
                             elif keyvalue[1] == "bool":
                                 if _ == True:
-                                    keyvalue[3].append(1)
+                                    keyvalue[2].append(1)
 
                                 elif _ == False:
-                                    keyvalue[3].append(0)
+                                    keyvalue[2].append(0)
 
                                 else:
                                     raise ValueError("Unknown boolean state")
 
                             elif keyvalue[1] == "bin":
                                 if type(_) in self.datatypes_conversion["bin"]:
-                                    keyvalue[3].append(self.__b64encode(_, True).decode(self.encoding))
+                                    keyvalue[2].append(self.__b64encode(_, True).decode(self.encoding))
 
                                 else:
                                     raise("array object is not in bytes data type")
@@ -942,7 +915,7 @@ class Version2():
         """
 
         # <variable_name>|<datatype>|<value>
-        # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
+        # <variable_name>|<datatype>|<array_datatype>|<values>
 
         if self.__dictionary is None or self.__data is None:
             raise ValueError("The configuration file is not yet loaded!")
@@ -953,7 +926,7 @@ class Version2():
 
             elif self.__dictionary[key][0] == "arr" and type(value) in self.datatypes_conversion[self.__dictionary[key][0]]:
                 for _ in value:
-                    for i in self.datatypes_conversion[self.__dictionary[key][3]]:
+                    for i in self.datatypes_conversion[self.__dictionary[key][2]]:
                         if type(_) not in i:
                             raise ValueError("New value has different datatype than the old value")
 
@@ -965,33 +938,32 @@ class Version2():
             # Add to the dictionary
             if valuetype == "arr":
                 array_datatype = oldvalue[1]
-                array_separator = oldvalue[2]
-                keyvalue = [valuetype, array_datatype, array_separator, []]
+                keyvalue = [valuetype, array_datatype, []]
                 # Check the list
-                if type(value) in (tuple, list):
+                if type(value) in self.datatypes_conversion[valuetype]:
                     for _ in value:
                         if keyvalue[1] == "str":
-                            keyvalue[3].append(str(_))
+                            keyvalue[2].append(str(_))
 
                         elif keyvalue[1] == "int":
-                            keyvalue[3].append(int(_))
+                            keyvalue[2].append(int(_))
 
                         elif keyvalue[1] == "float":
-                            keyvalue[3].append(float(_))
+                            keyvalue[2].append(float(_))
 
                         elif keyvalue[1] == "bool":
                             if _ == True:
-                                keyvalue[3].append(1)
+                                keyvalue[2].append(1)
 
                             elif _ == False:
-                                keyvalue[3].append(0)
+                                keyvalue[2].append(0)
 
                             else:
                                 raise ValueError("Unknown boolean state")
 
                         elif keyvalue[1] == "bin":
                             if type(_) in self.datatypes_conversion["bin"]:
-                                keyvalue[3].append(self.__b64encode(_, True).decode(self.encoding))
+                                keyvalue[2].append(self.__b64encode(_, True).decode(self.encoding))
 
                             else:
                                 raise("array object is not in bytes data type")
@@ -1048,13 +1020,12 @@ class Version2():
 
         self.__dictionary.pop(key)
 
-    def new(self, name, author=None, separator=None, compression="None", encryption="None"):
+    def new(self, name, author=None, compression="None", encryption="None"):
         """
         Create a new configuration file.
 
         :param str name: The name of the configuration file.
         :param str author: [Optional] The name of the configuration file's author.
-        :param str separator: The separator to be used in the configuration file. (Defaults to self.default_separator)
         :param str compression: The compression algorithm name (See self.compressions)
         :param str encryption: The encryption algorithm name (See self.encryptions)
         """
@@ -1073,13 +1044,6 @@ class Version2():
             # The parser version is used as the config file version.
             # That way, we can drop support for older versions. (I hope we'll not do that)
             self.__data["version"] = self.VERSION
-
-            # Set the separator
-            if separator is None:
-                self.__data["separator"] = self.default_separator
-
-            else:
-                self.__data["separator"] = separator
 
             # Set the compression
             if compression in self.compressions:
@@ -1129,7 +1093,7 @@ class Version2():
         """
 
         # <variable_name>|<datatype>|<value>
-        # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
+        # <variable_name>|<datatype>|<array_datatype>|<values>
 
         for key in dictionary:
             # Check if object's datatype is supported
@@ -1138,33 +1102,28 @@ class Version2():
                 if dictionary[key][0] == "arr":
                     # Check if array's datatype is supported
                     if dictionary[key][1] in self.array_datatypes:
-                        # Check if separator is a string
-                        if type(dictionary[key][2]) is str:
-                            # Check objects in array individually
-                            for value in dictionary[key][3]:
-                                if dictionary[key][1] == "bool":
-                                    if value in (0, 1):
-                                        pass
-
-                                    else:
-                                        raise ValueError("Unknown Boolean State")
-
-                                elif dictionary[key][1] == "bin":
-                                    if self.__b64encode(self.__b64decode(value)) == value:
-                                        pass
-
-                                    else:
-                                        raise ValueError("Invalid binary data")
+                        # Check objects in array individually
+                        for value in dictionary[key][2]:
+                            if dictionary[key][1] == "bool":
+                                if value in (0, 1):
+                                    pass
 
                                 else:
-                                    if type(value) in self.array_datatypes_conversion[dictionary[key][1]]:
-                                        pass
+                                    raise ValueError("Unknown Boolean State")
 
-                                    else:
-                                        raise ValueError("An array object's datatype does not match the array's datatype")
+                            elif dictionary[key][1] == "bin":
+                                if self.__b64encode(self.__b64decode(value)) == value:
+                                    pass
 
-                        else:
-                            raise ValueError("Separators must be a string")
+                                else:
+                                    raise ValueError("Invalid binary data")
+
+                            else:
+                                if type(value) in self.array_datatypes_conversion[dictionary[key][1]]:
+                                    pass
+
+                                else:
+                                    raise ValueError("An array object's datatype does not match the array's datatype")
 
                     else:
                         raise ValueError("Array datatype is not supported (see self.array_datatypes")
