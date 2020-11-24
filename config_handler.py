@@ -33,7 +33,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.15"  # Module version
+VERSION = "0.0.1.16"  # Module version
 
 
 class AES256(object):
@@ -411,7 +411,7 @@ class Version2():
         :param str epass: The encryption password (Optional)
         """
 
-        self.VERSION = "0.0.0.14"  # Parser version
+        self.VERSION = "0.0.0.15"  # Parser version
 
         self.configpath = configpath
         self.__data = {
@@ -687,7 +687,7 @@ class Version2():
         except KeyError:
             pass
 
-        if type(result["version"]) is not list:
+        if type(result["version"]) is not list and result["version"] is not None:
             newver = result["version"].split('.')
 
         else:
@@ -926,12 +926,11 @@ class Version2():
 
             elif self.__dictionary[key][0] == "arr" and type(value) in self.datatypes_conversion[self.__dictionary[key][0]]:
                 for _ in value:
-                    for i in self.datatypes_conversion[self.__dictionary[key][2]]:
-                        if type(_) not in i:
-                            raise ValueError("New value has different datatype than the old value")
+                    if type(_) not in self.datatypes_conversion[self.__dictionary[key][1]]:
+                        raise TypeError("New value has different datatype than the old value")
 
             if type(value) not in self.datatypes_conversion[self.__dictionary[key][0]]:
-                raise ValueError("New value has different datatype than the old value")
+                raise TypeError("New value has different datatype than the old value")
 
             oldvalue = self.__dictionary[key]
             valuetype = oldvalue[0]
@@ -1075,7 +1074,7 @@ class Version2():
         :returns dict: The configuration file content.
         """
 
-        if self.__data in (None, {}) or self.__dictionary in (None, {}):
+        if self.__data is None or self.__dictionary is None:
             raise ValueError("Dictionary is not yet loaded!")
 
         to_export = self.__data

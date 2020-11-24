@@ -427,29 +427,10 @@ class TestVersion2(unittest.TestCase):
                         raise AssertionError("Type checking failed")
 
                 else:
-                    # update() must raise a ValueError because this
+                    # update() must raise a TypeError because this
                     # will pass an object with a different datatype
                     try:
                         config.update(testvar, random_object)
-
-                    except(ValueError):
-                        pass
-
-                    else:
-                        raise AssertionError("Type checking failed")
-
-                if datatype == "arr":
-                    # Test arrays
-                    used_object_types = [datatype, "arr"]
-                    while random_object_type in used_object_types:
-                        random_object_type = test_keys[random.randint(0, (len(list(tests.keys())) - 1))]
-
-                    used_object_types.append(random_object_type)
-
-                    try:
-                        randomobject = tests["arr"][random_object_type]
-                        # Test updating an array with an object that has a different data type.
-                        config.update(testvar, randomobject)
 
                     except(TypeError):
                         pass
@@ -457,7 +438,29 @@ class TestVersion2(unittest.TestCase):
                     else:
                         raise AssertionError("Type checking failed")
 
-                    # config.update(testvar, tests["arr"][arrdatatype][random.randint(0, (len(tests["arr"][arrdatatype]) - 1))])
+                if datatype == "arr":
+                    # Test arrays
+                    used_object_types = [datatype, random_object_type]
+                    while random_object_type in used_object_types:
+                        random_object_type = test_keys[random.randint(0, (len(list(tests.keys())) - 1))]
+                        if random_object_type == "arr":
+                            continue
+
+                        if type(tests["arr"][random_object_type][0]) is type(config.get(testvar)[0]):
+                            used_object_types.append(random_object_type)
+                            continue
+
+                    used_object_types.append(random_object_type)
+
+                    randomobject = tests["arr"][random_object_type]
+                    try:
+                        config.update(testvar, randomobject)
+
+                    except(TypeError):
+                        pass
+
+                    else:
+                        raise AssertionError("Type checking failed")
 
                 else:
                     newvalue = tests[datatype][random.randint(0, (len(tests[datatype]) - 1))]
