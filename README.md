@@ -62,11 +62,11 @@ Create, update, and remove values from a configuration file made by ConfigHandle
   # Adding new variables
   config.add("aVariableName", "str", "Hello, world!")
   config.add("Another name", "int", 645798)
-  
+
   # Getting variables
   print(config.get("aVariableName"))
   print(config.get("Another name") * 2)
-  
+
   # Updating existing variables
   config.update("aVariableName", "New string")
   config.update("Another name", 1234)
