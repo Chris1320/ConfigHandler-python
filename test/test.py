@@ -145,7 +145,6 @@ class TestVersion2(unittest.TestCase):
         testfile1: {
             "name": "Test Configuration File #1",
             "author": "",
-            "separator": None,
             "compression": "None",
             "encryption": "None",
             "password": None
@@ -153,7 +152,6 @@ class TestVersion2(unittest.TestCase):
         testfile2: {
             "name": "Test Configuration File #2",
             "author": "Chris1320",
-            "separator": None,
             "compression": "None",
             "encryption": "None",
             "password": None
@@ -161,7 +159,6 @@ class TestVersion2(unittest.TestCase):
         testfile3: {
             "name": "Test Configuration File #3",
             "author": "Chris1320",
-            "separator": None,
             "compression": "zlib",
             "encryption": "None",
             "password": None
@@ -169,7 +166,6 @@ class TestVersion2(unittest.TestCase):
         testfile4: {
             "name": "Test Configuration File #4",
             "author": "Chris1320",
-            "separator": None,
             "compression": "None",
             "encryption": "aes256",
             "password": "testpassword123"
@@ -177,7 +173,6 @@ class TestVersion2(unittest.TestCase):
         testfile5: {
             "name": "Test Configuration File #5",
             "author": "Chris1320",
-            "separator": None,
             "compression": "zlib",
             "encryption": "aes256",
             "password": "73$T_Password123"
@@ -185,7 +180,6 @@ class TestVersion2(unittest.TestCase):
         testfile6: {
             "name": "Test Configuration File #6",
             "author": "Chris1320",
-            "separator": "`",
             "compression": "zlib",
             "encryption": "aes256",
             "password": "testP@ssword123"
@@ -231,7 +225,6 @@ class TestVersion2(unittest.TestCase):
         config6.new(
             name="Test Configuration File #6",
             author="Chris1320",
-            separator="`",
             compression="zlib",
             encryption="aes256"
         )
@@ -249,9 +242,6 @@ class TestVersion2(unittest.TestCase):
             config.load()
             configinfo = config.info()
 
-            if testinfo["separator"] is None:
-                testinfo["separator"] = config.default_separator
-
             self.assertEqual(configinfo["name"], testinfo["name"])
             self.assertEqual(configinfo["author"], testinfo["author"])
 
@@ -262,7 +252,6 @@ class TestVersion2(unittest.TestCase):
             self.assertEqual(type(configinfo["version"][2]), int)
             self.assertEqual(type(configinfo["version"][3]), int)
 
-            self.assertEqual(configinfo["separator"], testinfo["separator"])
             self.assertEqual(configinfo["compression"], testinfo["compression"])
             self.assertEqual(configinfo["encryption"], testinfo["encryption"])
 
@@ -282,11 +271,11 @@ class TestVersion2(unittest.TestCase):
             config.add("testVariable_int", "int", 1234)
             config.add("testVariable_float", "float", 1234.5678)
             config.add("testVariable_bool", "bool", True)
-            config.add("testVariable_arr1", "arr", ("Test1", "Test2"), "str", "=")
-            config.add("testVariable_arr2", "arr", (453, 784, 5468, 12, 3), "int", "=")
-            config.add("testVariable_arr3", "arr", (3.14, 5.48), "float", "=")
-            config.add("testVariable_arr4", "arr", (True, False, False, True), "bool", "=")
-            config.add("testVariable_arr5", "arr", (b'Test String', testphoto, b"Another string", b'one last'), "bin", "=")
+            config.add("testVariable_arr1", "arr", ("Test1", "Test2"), "str")
+            config.add("testVariable_arr2", "arr", (453, 784, 5468, 12, 3), "int")
+            config.add("testVariable_arr3", "arr", (3.14, 5.48), "float")
+            config.add("testVariable_arr4", "arr", (True, False, False, True), "bool")
+            config.add("testVariable_arr5", "arr", (b'Test String', testphoto, b"Another string", b'one last'), "bin")
             config.add("testVariable_bin", "bin", testphoto)
             config.save()
 
@@ -323,7 +312,7 @@ class TestVersion2(unittest.TestCase):
             self.assertEqual(config.get("testVariable_arr5")[1], testphoto)
             self.assertEqual(config.get("testVariable_arr5")[2], b"Another string")
             self.assertEqual(config.get("testVariable_arr5")[3], b'one last')
-            self.assertEqual(config.get("testVariable_bin")[0], testphoto)
+            self.assertEqual(config.get("testVariable_bin"), testphoto)
 
     def test_load_config(self):
         for testfile in self.testfiles:
@@ -438,12 +427,12 @@ class TestVersion2(unittest.TestCase):
                         raise AssertionError("Type checking failed")
 
                 else:
-                    # update() must raise a ValueError because this
+                    # update() must raise a TypeError because this
                     # will pass an object with a different datatype
                     try:
                         config.update(testvar, random_object)
 
-                    except(ValueError):
+                    except(TypeError):
                         pass
 
                     else:
@@ -451,27 +440,30 @@ class TestVersion2(unittest.TestCase):
 
                 if datatype == "arr":
                     # Test arrays
-                    used_object_types = [datatype, "arr"]
+                    used_object_types = [datatype, random_object_type]
                     while random_object_type in used_object_types:
                         random_object_type = test_keys[random.randint(0, (len(list(tests.keys())) - 1))]
+                        if random_object_type == "arr":
+                            continue
+
+                        if type(tests["arr"][random_object_type][0]) is type(config.get(testvar)[0]):
+                            used_object_types.append(random_object_type)
+                            continue
 
                     used_object_types.append(random_object_type)
 
+                    randomobject = tests["arr"][random_object_type]
                     try:
-                        randomobject = tests["arr"][random_object_type][random.randint(0, (len(tests["arr"][random_object_type]) - 1))]
-                        # Test updating an array with an object that has a different data type.
                         config.update(testvar, randomobject)
 
-                    except(ValueError):
+                    except(TypeError):
                         pass
 
                     else:
                         raise AssertionError("Type checking failed")
 
-                    config.update(testvar, tests["arr"][arrdatatype][random.randint(0, (len(tests["arr"][arrdatatype]) - 1))])
-
                 else:
-                    newvalue = tests[datatype][0, random.randint(0, (len(tests[datatype]) - 1))]
+                    newvalue = tests[datatype][random.randint(0, (len(tests[datatype]) - 1))]
                     config.update(testvar, newvalue)
                     self.assertEqual(config.get(testvar), newvalue)
 
@@ -490,26 +482,24 @@ class TestVersion2(unittest.TestCase):
         newconfig.new(
             "Test Configuration File #7 (Data Imported from #6)",
             "Somebody",
-            "<?>",
             "zlib",
-            None
+            "None"
         )
         newconfig.import_dict(exported_data["dictionary"])
         newconfig.save()
 
-        self.assertEqual(config.info()["name"], "Test Configuration File #7 (Data Imported from #6)")
-        self.assertEqual(config.info()["author"], "Somebody")
+        self.assertEqual(newconfig.info()["name"], "Test Configuration File #7 (Data Imported from #6)")
+        self.assertEqual(newconfig.info()["author"], "Somebody")
 
-        self.assertEqual(type(config.info()["version"]), list)
-        self.assertEqual(len(config.info()["version"]), 4)
-        self.assertEqual(type(config.info()["version"][0]), int)
-        self.assertEqual(type(config.info()["version"][1]), int)
-        self.assertEqual(type(config.info()["version"][2]), int)
-        self.assertEqual(type(config.info()["version"][3]), int)
+        self.assertEqual(type(newconfig.info()["version"]), list)
+        self.assertEqual(len(newconfig.info()["version"]), 4)
+        self.assertEqual(type(newconfig.info()["version"][0]), int)
+        self.assertEqual(type(newconfig.info()["version"][1]), int)
+        self.assertEqual(type(newconfig.info()["version"][2]), int)
+        self.assertEqual(type(newconfig.info()["version"][3]), int)
 
-        self.assertEqual(config.info()["separator"], "<?>")
-        self.assertEqual(config.info()["compression"], "zlib")
-        self.assertEqual(config.info()["encryption"], "None")
+        self.assertEqual(newconfig.info()["compression"], "zlib")
+        self.assertEqual(newconfig.info()["encryption"], "None")
 
         testvars = (
             "testVariable_str",
@@ -597,6 +587,7 @@ def run():
         "v2-testfile4.dat",
         "v2-testfile5.dat",
         "v2-testfile6.dat",
+        "v2-testfile7.dat"
     ]
     for file in files2remove:
         print("[+] Deleting `test/{0}`...".format(file))
