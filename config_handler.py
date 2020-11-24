@@ -33,7 +33,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.12"  # Module version
+VERSION = "0.0.1.13"  # Module version
 
 
 class AES256(object):
@@ -411,7 +411,7 @@ class Version2():
         :param str epass: The encryption password (Optional)
         """
 
-        self.VERSION = "0.0.0.11"  # Parser version
+        self.VERSION = "0.0.0.12"  # Parser version
 
         self.configpath = configpath
         self.__data = {
@@ -1191,7 +1191,7 @@ class Version2():
                             raise ValueError("Unknown boolean state")
 
                     elif dictionary[key][0] == "bin":
-                        if self.__b64encode(self.__b64decode(value)) == value:
+                        if self.__b64encode(self.__b64decode(dictionary[key][1])) == dictionary[key][1]:
                             pass
 
                         else:
