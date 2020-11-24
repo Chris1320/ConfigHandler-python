@@ -33,7 +33,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.1.13"  # Module version
+VERSION = "0.0.1.14"  # Module version
 
 
 class AES256(object):
@@ -411,7 +411,7 @@ class Version2():
         :param str epass: The encryption password (Optional)
         """
 
-        self.VERSION = "0.0.0.12"  # Parser version
+        self.VERSION = "0.0.0.13"  # Parser version
 
         self.configpath = configpath
         self.__data = {
@@ -832,7 +832,7 @@ class Version2():
 
         if self.__dictionary.get(key, None) is None:
             # Some lazy security checks
-            if type(value) in (tuple, list):
+            if type(value) in self.datatypes_conversion["arr"]:
                 for v in value:
                     if array_datatype == "bin":
                         pass
@@ -841,7 +841,7 @@ class Version2():
                         if self.__data["separator"] in str(v):
                             raise ValueError("value must not contain the separator!")
 
-            elif type(value) is bytes:
+            elif type(value) in self.datatypes_conversion["bin"]:
                 pass
 
             else:
@@ -859,7 +859,7 @@ class Version2():
 
                     keyvalue = [valuetype, array_datatype, array_separator, []]
                     # Check the list
-                    if type(value) in (tuple, list):
+                    if type(value) in self.datatypes_conversion["arr"]:
                         for _ in value:
                             if keyvalue[1] == "str":
                                 keyvalue[3].append(str(_))
@@ -871,19 +871,6 @@ class Version2():
                                 keyvalue[3].append(float(_))
 
                             elif keyvalue[1] == "bool":
-                                # * NOTE: I am keeping this here because I might be wrong.
-                                # My mind is not working properly right now.
-                                """
-                                if int(_) == 0:
-                                    keyvalue[3].append(False)
-
-                                elif int(_) == 1:
-                                    keyvalue[3].append(True)
-
-                                else:
-                                    raise ValueError("Unknown boolean state")
-                                """
-
                                 if _ == True:
                                     keyvalue[3].append(1)
 
@@ -894,7 +881,7 @@ class Version2():
                                     raise ValueError("Unknown boolean state")
 
                             elif keyvalue[1] == "bin":
-                                if type(_) is bytes:
+                                if type(_) in self.datatypes_conversion["bin"]:
                                     keyvalue[3].append(self.__b64encode(_, True).decode(self.encoding))
 
                                 else:
@@ -929,7 +916,7 @@ class Version2():
                             raise ValueError("Unknown boolean state")
 
                     elif valuetype == "bin":
-                        if type(value) is bytes:
+                        if type(value) in self.datatypes_conversion["bin"]:
                             self.__dictionary[key] = [valuetype, self.__b64encode(value, True).decode(self.encoding)]
 
                         else:
@@ -1003,7 +990,7 @@ class Version2():
                                 raise ValueError("Unknown boolean state")
 
                         elif keyvalue[1] == "bin":
-                            if type(_) is bytes:
+                            if type(_) in self.datatypes_conversion["bin"]:
                                 keyvalue[3].append(self.__b64encode(_, True).decode(self.encoding))
 
                             else:
@@ -1038,7 +1025,7 @@ class Version2():
                         raise ValueError("Unknown boolean state")
 
                 elif valuetype == "bin":
-                    if type(value) is bytes:
+                    if type(value) in self.datatypes_conversion["bin"]:
                         self.__dictionary[key] = [valuetype, self.__b64encode(value, True).decode(self.encoding)]
 
                     else:
