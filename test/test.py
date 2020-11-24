@@ -323,7 +323,7 @@ class TestVersion2(unittest.TestCase):
             self.assertEqual(config.get("testVariable_arr5")[1], testphoto)
             self.assertEqual(config.get("testVariable_arr5")[2], b"Another string")
             self.assertEqual(config.get("testVariable_arr5")[3], b'one last')
-            self.assertEqual(config.get("testVariable_bin")[0], testphoto)
+            self.assertEqual(config.get("testVariable_bin"), testphoto)
 
     def test_load_config(self):
         for testfile in self.testfiles:
@@ -458,20 +458,20 @@ class TestVersion2(unittest.TestCase):
                     used_object_types.append(random_object_type)
 
                     try:
-                        randomobject = tests["arr"][random_object_type][random.randint(0, (len(tests["arr"][random_object_type]) - 1))]
+                        randomobject = tests["arr"][random_object_type]
                         # Test updating an array with an object that has a different data type.
                         config.update(testvar, randomobject)
 
-                    except(ValueError):
+                    except(TypeError):
                         pass
 
                     else:
                         raise AssertionError("Type checking failed")
 
-                    config.update(testvar, tests["arr"][arrdatatype][random.randint(0, (len(tests["arr"][arrdatatype]) - 1))])
+                    # config.update(testvar, tests["arr"][arrdatatype][random.randint(0, (len(tests["arr"][arrdatatype]) - 1))])
 
                 else:
-                    newvalue = tests[datatype][0, random.randint(0, (len(tests[datatype]) - 1))]
+                    newvalue = tests[datatype][random.randint(0, (len(tests[datatype]) - 1))]
                     config.update(testvar, newvalue)
                     self.assertEqual(config.get(testvar), newvalue)
 
@@ -492,24 +492,24 @@ class TestVersion2(unittest.TestCase):
             "Somebody",
             "<?>",
             "zlib",
-            None
+            "None"
         )
         newconfig.import_dict(exported_data["dictionary"])
         newconfig.save()
 
-        self.assertEqual(config.info()["name"], "Test Configuration File #7 (Data Imported from #6)")
-        self.assertEqual(config.info()["author"], "Somebody")
+        self.assertEqual(newconfig.info()["name"], "Test Configuration File #7 (Data Imported from #6)")
+        self.assertEqual(newconfig.info()["author"], "Somebody")
 
-        self.assertEqual(type(config.info()["version"]), list)
-        self.assertEqual(len(config.info()["version"]), 4)
-        self.assertEqual(type(config.info()["version"][0]), int)
-        self.assertEqual(type(config.info()["version"][1]), int)
-        self.assertEqual(type(config.info()["version"][2]), int)
-        self.assertEqual(type(config.info()["version"][3]), int)
+        self.assertEqual(type(newconfig.info()["version"]), list)
+        self.assertEqual(len(newconfig.info()["version"]), 4)
+        self.assertEqual(type(newconfig.info()["version"][0]), int)
+        self.assertEqual(type(newconfig.info()["version"][1]), int)
+        self.assertEqual(type(newconfig.info()["version"][2]), int)
+        self.assertEqual(type(newconfig.info()["version"][3]), int)
 
-        self.assertEqual(config.info()["separator"], "<?>")
-        self.assertEqual(config.info()["compression"], "zlib")
-        self.assertEqual(config.info()["encryption"], "None")
+        self.assertEqual(newconfig.info()["separator"], "<?>")
+        self.assertEqual(newconfig.info()["compression"], "zlib")
+        self.assertEqual(newconfig.info()["encryption"], "None")
 
         testvars = (
             "testVariable_str",
@@ -597,6 +597,7 @@ def run():
         "v2-testfile4.dat",
         "v2-testfile5.dat",
         "v2-testfile6.dat",
+        "v2-testfile7.dat"
     ]
     for file in files2remove:
         print("[+] Deleting `test/{0}`...".format(file))
