@@ -122,35 +122,26 @@ Create, update, and remove values from a configuration file made by ConfigHandle
   is compressed or even be encrypted. `#` symbols represent comments. Comments
   are not allowed inside the dictionary.
 
-  ```python
-  # This is a decoded and decompressed version of the configuration file.
-
-  # The configuration info is formatted the same way as the version 1 configuration file format.
-  name=Sample Configuration file
-  author=Christopher Andrei Tayao
-  version=2
-  separator=|
-
-  # The values below tells the module what compression and encryption algorithms
-  # are used to store the dictionary.
-  # Of course we did not compress anything here.
-  compression=Huffman
-  encryption=None
-
-  # This is the line where the dictionary starts.
-  # We will decode and decrypt the dictionary to make it readable.
-  # This time, comments are allowed inside the dictionary.
-  +|+DICTIONARY+|+
-  # <variable_name>|<datatype>|<value>
-  value1|str|Hello, world!
-  aVariable|str|Some things here...
-  anInt215|int|1452
-  1Float|float|3.14
-  # 0 = False, 1 = True
-  isItTRUE|bool|0
-  # The array below consists only of strings. Mixed data types are currently unavailable. (DEV0004)
-  # <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
-  anArrayIGuess|arr|str|:;:|value1:;:Hello again!:;:Hola:;:Bonjour:;:anothing string of text.
+  ```json
+  {
+    "name": "Sample Configuration File",
+    "author": "Author Name",
+    "version": "0.0.1.0",
+    "compression": "zlib",
+    "encryption": "aes256",
+    "dictionary": {
+        "value1": ["str", "Hello, world!"],
+        "aVariable": ["str", "Some things here..."],
+        "anInt215": ["int", 1452],
+        "1Float": ["float", 3.14],
+        "isItTRUE": ["bool", 0], // 0 = False; 1 = True
+        "anArrayIGuess": [
+            "arr",
+            "str",
+            ["value1", "Hello again!", "Hola", "Bonjour", "another string of text"]
+        ]
+    }
+}
   ```
 
   - Configuration Name:
