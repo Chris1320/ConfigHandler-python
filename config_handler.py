@@ -33,7 +33,7 @@ import hashlib
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
 
-VERSION = "0.0.2.0"  # Module version
+VERSION = "0.0.2.1"  # Module version
 
 
 class AES256(object):
@@ -411,7 +411,7 @@ class Version2():
         :param str epass: The encryption password (Optional)
         """
 
-        self.VERSION = "0.0.1.0"  # Parser version
+        self.VERSION = "0.0.1.1"  # Parser version
 
         self.configpath = configpath
         self.__data = {
@@ -1054,7 +1054,7 @@ class Version2():
             # Set the encryption
             if encryption in self.encryptions:
                 self.__data["encryption"] = encryption
-                if self.__epass is None or type(self.__epass) is not str:
+                if (self.__epass is None and self.__data["encryption"] != "None") and type(self.__epass) not in (str, None):
                     raise ValueError("`epass` must be a string")
 
             else:
