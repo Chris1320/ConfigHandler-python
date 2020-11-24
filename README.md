@@ -90,8 +90,8 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 - Version 1
   - Dictionary [Base64 encoded (optional)]
 - Version 2
-  - File info (config name, author, version, etc.) [Base64 encoded]
-  - Dictionary [Compressed]
+  - File info (config name, author, version, etc.) [JSON format, Base64 encoded]
+  - Dictionary [JSON format, Compressed]
 
 ## Configuration Files Documentation
 
@@ -119,8 +119,8 @@ Create, update, and remove values from a configuration file made by ConfigHandle
   The version 2 of the configuration file contains more information about
   itself. It contains the configuration file's name, author, version, and
   the actual dictionary. Everything is encoded using Base64 and the dictionary
-  is compressed or even be encrypted. `#` symbols represent comments. Comments
-  are not allowed inside the dictionary.
+  is compressed or even be encrypted. The configuration file follows JSON's
+  syntax.
 
   ```json
   {
@@ -134,14 +134,14 @@ Create, update, and remove values from a configuration file made by ConfigHandle
         "aVariable": ["str", "Some things here..."],
         "anInt215": ["int", 1452],
         "1Float": ["float", 3.14],
-        "isItTRUE": ["bool", 0], // 0 = False; 1 = True
+        "isItTRUE": ["bool", 0],
         "anArrayIGuess": [
             "arr",
             "str",
             ["value1", "Hello again!", "Hola", "Bonjour", "another string of text"]
         ]
     }
-}
+  }
   ```
 
   - Configuration Name:
@@ -161,36 +161,8 @@ Create, update, and remove values from a configuration file made by ConfigHandle
     The dictionary encryption algorithm is identified by the `encryption` key.
     It contains the encryption algorithm name used to encrypt the dictionary.
   - Dictionary
-    The dictionary is the last part of the configuration file. ConfigHandler knows
-    the position of the dictionary by looking for the constant string `+|+DICTIONARY+|+`.
+    The dictionary is the last part of the configuration file.
     The dictionary contains the key/value pairs of the configuration file.
     It can also be optionally encrypted. Currently, the supported data types
     are strings (str), integers (int), decimals (float), booleans (bool),
     arrays (arr), and binary (bin).
-
-    - Dictionary key/value pair Example (For strings, integers, decimals, booleans, and binary; Separator in this case is `|`):
-
-      ```plaintext
-      <variable_name>|<datatype>|<value>
-      ```
-
-    - Dictionary key/value pair Example (For arrays; Separator in this case is `|`):
-
-      ```plaintext
-      <variable_name>|<datatype>|<array_datatype>|<array_separator>|<values>
-      ```
-
-## TODO List
-
-- Version 1
-  - [ ] BUG: The separator can be included in set() and add()'s
-    `variable`, and get()'s `data` parameters. (tl;dr: parameter safety checks)
-- Version 2
-  - [ ] IMPROVEMENT: Nested arrays
-  - [ ] IMPROVEMENT: Dictionary datatype
-  - [ ] IMPROVEMENT: Remove an array object directly from ConfigHandler
-  - [ ] IMPROVEMENT: Use `self.datatypes_conversion` instead of hardcoding the
-    datatypes in safety checks.
-  - [X] IMPROVEMENT: Move `epass` to \_\_init\_\_() method so that we don't ask
-    for the epass every method calls.
-  - [ ] IMPROVEMENT: Get all variable names (`get_all()` method?)
