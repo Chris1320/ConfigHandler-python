@@ -31,7 +31,7 @@ import base64
 MODULE_VERSION = (0, 3, 0)
 
 
-class Simple(object):
+class Simple():
     """
     A class the creates and manipulates a "simple" configuration file.
 
@@ -40,33 +40,47 @@ class Simple(object):
     + Each line of the file contains one key-value pair separated by an equal (=) sign.
     """
 
-    def __init__(self, config_path: str, isbase64: bool = False, encoding: str = "utf-8"):
+    def __init__(self, config_path: str, isbase64: bool = False, encoding: str = "utf-8", readonly: bool = False):
         """
         The initialization method for Simple() class.
 
         :param str config_path: The path of the configuration file to use.
         :param bool isbase64: True if the configuration file is encoded via Base64.
         :param str encoding: The encoding to be used.
+        :param bool readonly: True if the configuration file is read-only.
         """
 
         self.VERSION = (0, 2, 0)  # Parser version
 
-        self.config_path = config_path
         self.isbase64 = isbase64
         self.encoding = encoding
 
-        self.data = {}  # We will put the contents of the configuration file here.
+        self._config_path = config_path
+        self.__readonly = readonly
+        self.__data = {}  # We will put the contents of the configuration file here.
 
-    def _read_config_file(self) -> None:
+    def _parse_key(self, key: str) -> None:
         """
-        Read the config file and store it to self.data as a dictionary.
+        Check if the key is valid.
+
+        :param str key: The key to check.
+        """
+
+        if '=' in key or type(key) is not str:
+            raise ValueError(f"Invalid key: {key}")
+
+        return
+
+    def load(self) -> None:
+        """
+        Read the config file and store it to self.__data as a dictionary.
 
         :returns void:
         """
 
-        with open(self.config_path, 'r') as fopen:
+        with open(self._config_path, 'r') as fopen:
             if self.isbase64:  # Decode data if it is Base64 encoded.
-                config_data = base64.b64decode(fopen.read())
+                config_data = base64.b64decode(fopen.read()).decode(self.encoding)
 
             else:
                 config_data = fopen.read()
@@ -77,28 +91,31 @@ class Simple(object):
 
             data = line.partition('=')  # * data[0] is the key, data[1] is the separator, data[2] is the value.
 
-            # Write the key-value pair to `self.data`.
+            # Write the key-value pair to `self.__data`.
             if data[2].partition('.')[0].isdigit() and data[2].partition('.')[2].isdigit():
-                self.data[data[0]] = float(data[2])
+                self.__data[data[0]] = float(data[2])
 
             elif data[2].isdigit():
-                self.data[data[0]] = int(data[2])
+                self.__data[data[0]] = int(data[2])
 
             else:
-                self.data[data[0]] = str(data[2])
+                self.__data[data[0]] = str(data[2])
 
-    def _save_config_file(self) -> None:
+    def save(self) -> None:
         """
-        Save the config file.
+        Save the config file. Raises a PermissionError if the configuration file is read-only.
 
         :returns void:
         """
 
-        config_data = ""  # Let's initialize it as an empty string first.
-        for key in self.data:
-            config_data += f"{key}={self.data[key]}\n"  # Write the key-value pair to the config file.
+        if self.__readonly:
+            raise PermissionError("The configuration file is read-only.")
 
-        with open(self.config_path, 'w') as fopen:
+        config_data = ""  # Let's initialize it as an empty string first.
+        for key in self.__data:
+            config_data += f"{key}={self.__data[key]}\n"  # Write the key-value pair to the config file.
+
+        with open(self._config_path, 'w') as fopen:
             if self.isbase64:
                 fopen.write(base64.b64encode(config_data.encode(self.encoding)).decode(self.encoding))
 
@@ -106,3 +123,41 @@ class Simple(object):
                 fopen.write(config_data)
 
         return
+
+    def get(self, key: str) -> str:
+        """
+        Get the value of <key> from `self.__data`.
+        """
+
+        return self.__data[key]  # Will raise a KeyError exception if the key is not found.
+
+    def set(self, key: str, value) -> None:
+        """
+        Add or update a new key-value pair to `self.__data`.
+
+        :param str key: The key to add.
+        :param value: The value to add.
+        """
+
+        self._parse_key(key)  # Check if the key is valid.
+        self.__data[key] = value
+        return
+
+    def remove(self, key: str) -> None:
+        """
+        Remove a key-value pair from `self.__data`.
+
+        :param str key: The key to remove.
+        """
+
+        self.__data.pop(key)
+        return
+
+    def keys(self) -> list:
+        """
+        Get all the keys in `self.__data`.
+
+        :returns list: The list of keys.
+        """
+
+        return self.__data.keys()
