@@ -66,7 +66,7 @@ class Simple():
         :param str key: The key to check.
         """
 
-        if '=' in key or type(key) is not str:
+        if '=' in key or key.startswith('#') or '\n' in key or type(key) is not str:
             raise ValueError(f"Invalid key: {key}")
 
         return
@@ -161,3 +161,34 @@ class Simple():
         """
 
         return self.__data.keys()
+
+
+class Advanced():
+    """
+    A class that creates and manipulates an "advanced" configuration file.
+
+    + This mode is for storing any datatype supported by the JSON data format.
+    """
+
+    import json
+
+    def __init__(self, config_path: str, epass: str = None, readonly: bool = False):
+        """
+        The initialization method of Advanced() class.
+
+        :param str config_path: The path of the configuration file to use.
+        :param str epass: The encryption password.
+        :param bool readonly: True if the configuration file is read-only.
+        """
+
+        self.VERSION = (0, 2, 0)  # Parser version
+
+        self._config_path = config_path
+        self.__readonly = readonly
+
+    def new(self, encoding: str = "utf-8"):
+        """
+        Create a new configuration file.
+        """
+
+        pass
