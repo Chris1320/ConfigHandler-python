@@ -1,126 +1,138 @@
-import cProfile
 import os
-import shutil
-import sys
 import time
 import random
-import timeit
-import unittest
 
-## The lazy way to do it...
-try:
-    import config_handler
+statistics = {
+    "import_time": None,
+    "total_runtime": None
+}
 
-except(ImportError):
-    shutil.copy("./config_handler.py", "test/config_handler.py")
-    import config_handler
-    os.remove("test/config_handler.py")
+statistics["total_runtime"] = time.time()
+
+print("[i] Importing module...")
+
+statistics["import_time"] = time.time()
+import config_handler
+statistics["import_time"] = time.time() - statistics["import_time"]
+
+print("[i] Testing Simple mode...")
+
+s = config_handler.Simple("test/v1-testconfig.dat", False)
 
 
-class TestVersion1(unittest.TestCase):
-    def test1_create_config(self):
-        if config_handler.Version1("test/v1-testconfig.dat", False).new() != 0:
-            raise Exception("File already exists")
+class SimpleModeTester():
+    def set_values(self):
+        s.set("aString1", "Hello, world!")
+        s.set("aString2", "Hello again!")
+        s.set("anInt1", 684)
+        s.set("anInt2", 6844534686)
+        s.set("aFloat1", 464286.5435414)
+        s.set("aFloat2", 3.14)
+        s.set("aBool1", True)
+        s.set("aBool2", False)
 
-        if config_handler.Version1("test/v1-testconfig.dat", False).add("aString1", "Hello, world!") != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).add("aString2", "Hello again!") != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).add("anInt1", 684) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).add("anInt2", 6844534686) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).add("aFloat1", 464286.5435414) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).add("aFloat2", 3.14) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).add("aBool1", True) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).add("aBool2", False) != 0: raise Exception("Failed to set variable")
+    def run(self, s):
+        self.s = s
+        start = time.time()
 
+
+statistics["simple_set_config_time"] = SimpleModeTester().run(s)
+
+statistics["total_runtime"] = time.time() - statistics["total_runtime"]
+print("[i] Done!")
+
+
+class TestSimple(unittest.TestCase):
     def test1_get_config_value(self):
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString1"), "Hello, world!")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString2"), "Hello again!")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("anInt1"), 684)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("anInt2"), 6844534686)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aFloat1"), 464286.5435414)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aFloat2"), 3.14)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aBool1"), True)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aBool2"), False)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("nonexistentvariable"), None)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aString1"), "Hello, world!")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aString2"), "Hello again!")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("anInt1"), 684)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("anInt2"), 6844534686)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aFloat1"), 464286.5435414)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aFloat2"), 3.14)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aBool1"), True)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aBool2"), False)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("nonexistentvariable"), None)
 
     def test1_set_config_value(self):
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString1"), "Hello, world!")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString2"), "Hello again!")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("anInt1"), 684)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("anInt2"), 6844534686)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aFloat1"), 464286.5435414)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aFloat2"), 3.14)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aBool1"), True)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aBool2"), False)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aString1"), "Hello, world!")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aString2"), "Hello again!")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("anInt1"), 684)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("anInt2"), 6844534686)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aFloat1"), 464286.5435414)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aFloat2"), 3.14)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aBool1"), True)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aBool2"), False)
 
-        if config_handler.Version1("test/v1-testconfig.dat", False).set("aString1", "This is a new string.") != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).set("aString2", "This is another string.") != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).set("anInt1", 31854) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).set("anInt2", 6468435135846843) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).set("aFloat1", 4354351.254684354) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).set("aFloat2", 184.84) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).set("aBool1", False) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig.dat", False).set("aBool2", True) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig.dat", False).set("aString1", "This is a new string.") != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig.dat", False).set("aString2", "This is another string.") != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig.dat", False).set("anInt1", 31854) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig.dat", False).set("anInt2", 6468435135846843) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig.dat", False).set("aFloat1", 4354351.254684354) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig.dat", False).set("aFloat2", 184.84) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig.dat", False).set("aBool1", False) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig.dat", False).set("aBool2", True) != 0: raise Exception("Failed to set variable")
 
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString1"), "This is a new string.")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aString2"), "This is another string.")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("anInt1"), 31854)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("anInt2"), 6468435135846843)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aFloat1"), 4354351.254684354)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aFloat2"), 184.84)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aBool1"), False)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig.dat", False).get("aBool2"), True)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aString1"), "This is a new string.")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aString2"), "This is another string.")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("anInt1"), 31854)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("anInt2"), 6468435135846843)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aFloat1"), 4354351.254684354)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aFloat2"), 184.84)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aBool1"), False)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig.dat", False).get("aBool2"), True)
 
     def test2_create_config(self):
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).new() != 0:
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).new() != 0:
             raise Exception("File already exists")
 
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("aString1", "Hello, world!") != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("aString2", "Hello again!") != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("anInt1", 684) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("anInt2", 6844534686) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("aFloat1", 464286.5435414) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("aFloat2", 3.14) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("aBool1", True) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).add("aBool2", False) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).add("aString1", "Hello, world!") != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).add("aString2", "Hello again!") != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).add("anInt1", 684) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).add("anInt2", 6844534686) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).add("aFloat1", 464286.5435414) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).add("aFloat2", 3.14) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).add("aBool1", True) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).add("aBool2", False) != 0: raise Exception("Failed to set variable")
 
     def test2_get_config_value(self):
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString1"), "Hello, world!")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString2"), "Hello again!")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("anInt1"), 684)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("anInt2"), 6844534686)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aFloat1"), 464286.5435414)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aFloat2"), 3.14)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aBool1"), True)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aBool2"), False)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("nonexistentvariable"), None)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aString1"), "Hello, world!")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aString2"), "Hello again!")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("anInt1"), 684)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("anInt2"), 6844534686)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aFloat1"), 464286.5435414)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aFloat2"), 3.14)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aBool1"), True)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aBool2"), False)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("nonexistentvariable"), None)
 
     def test2_set_config_value(self):
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString1"), "Hello, world!")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString2"), "Hello again!")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("anInt1"), 684)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("anInt2"), 6844534686)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aFloat1"), 464286.5435414)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aFloat2"), 3.14)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aBool1"), True)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aBool2"), False)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aString1"), "Hello, world!")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aString2"), "Hello again!")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("anInt1"), 684)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("anInt2"), 6844534686)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aFloat1"), 464286.5435414)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aFloat2"), 3.14)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aBool1"), True)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aBool2"), False)
 
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).set("aString1", "This is a new string.") != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).set("aString2", "This is another string.") != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).set("anInt1", 31854) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).set("anInt2", 6468435135846843) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).set("aFloat1", 4354351.254684354) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).set("aFloat2", 184.84) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).set("aBool1", False) != 0: raise Exception("Failed to set variable")
-        if config_handler.Version1("test/v1-testconfig-base64.conf", True).set("aBool2", True) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).set("aString1", "This is a new string.") != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).set("aString2", "This is another string.") != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).set("anInt1", 31854) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).set("anInt2", 6468435135846843) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).set("aFloat1", 4354351.254684354) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).set("aFloat2", 184.84) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).set("aBool1", False) != 0: raise Exception("Failed to set variable")
+        if config_handler.Simple("test/v1-testconfig-base64.conf", True).set("aBool2", True) != 0: raise Exception("Failed to set variable")
 
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString1"), "This is a new string.")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aString2"), "This is another string.")
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("anInt1"), 31854)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("anInt2"), 6468435135846843)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aFloat1"), 4354351.254684354)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aFloat2"), 184.84)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aBool1"), False)
-        self.assertEqual(config_handler.Version1("test/v1-testconfig-base64.conf", True).get("aBool2"), True)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aString1"), "This is a new string.")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aString2"), "This is another string.")
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("anInt1"), 31854)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("anInt2"), 6468435135846843)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aFloat1"), 4354351.254684354)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aFloat2"), 184.84)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aBool1"), False)
+        self.assertEqual(config_handler.Simple("test/v1-testconfig-base64.conf", True).get("aBool2"), True)
 
 
 class TestVersion2(unittest.TestCase):
@@ -556,13 +568,13 @@ def run():
     suite = unittest.TestSuite()
 
     # Version 1 test cases
-    suite.addTest(TestVersion1("test1_create_config"))
-    suite.addTest(TestVersion1("test1_get_config_value"))
-    suite.addTest(TestVersion1("test1_set_config_value"))
+    suite.addTest(TestSimple("test1_create_config"))
+    suite.addTest(TestSimple("test1_get_config_value"))
+    suite.addTest(TestSimple("test1_set_config_value"))
 
-    suite.addTest(TestVersion1("test2_create_config"))
-    suite.addTest(TestVersion1("test2_get_config_value"))
-    suite.addTest(TestVersion1("test2_set_config_value"))
+    suite.addTest(TestSimple("test2_create_config"))
+    suite.addTest(TestSimple("test2_get_config_value"))
+    suite.addTest(TestSimple("test2_set_config_value"))
 
     # Version 2 test cases
     suite.addTest(TestVersion2("test_create_config"))

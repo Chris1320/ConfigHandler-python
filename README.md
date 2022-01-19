@@ -22,6 +22,7 @@ config = Simple("config.ini")
 config.set("foo", "bar")  # "foo" is the key, "bar" is the value.
 config.set("nums", 123)
 config.set("dec", 3.14)
+config.set("Aboolean", True)
 config.set("unintentional variable!", "unintentional value.")
 
 # Remove values

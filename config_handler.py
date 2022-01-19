@@ -187,6 +187,13 @@ class Simple():
             elif data[2].isdigit():
                 self.__data[data[0]] = int(data[2])
 
+            elif data[2].lower() in ("true", "false"):
+                if data[2].lower() == "true":
+                    self.__data[data[0]] = True
+
+                else:
+                    self.__data[data[0]] = False
+
             else:
                 self.__data[data[0]] = str(data[2])
 
