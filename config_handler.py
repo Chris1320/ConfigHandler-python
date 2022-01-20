@@ -290,25 +290,12 @@ class Advanced():
         self.__metadata = {}  # Metadata of the configuration file.
         self.__dictionary = {}  # The actual data of the configuration file.
 
+        # All compression and encryption methods must accept and return `bytes` type.
         self.supported = {
             "compression": ("zlib",),
             "encryption": ("aes256",),
             "valuetypes": (str, int, float, bool, list, tuple, dict)
         }
-
-    def _check_key(self, key: str) -> bool:
-        """
-        Returns True if key is valid. Otherwise, raise ValueError.
-
-        :param str key: The key to check
-
-        :returns bool: True if key is valid.
-        """
-
-        if type(key) is not str:
-            raise ValueError(f"Invalid key `{key}`")
-
-        return True
 
     def __compress(self, data: bytes) -> bytes:
         """
@@ -316,13 +303,11 @@ class Advanced():
 
         :param bytes data: The data to compress.
 
+        :returns str: Unmodified data if compression is None.
         :returns bytes: The compressed data.
         """
 
-        if self.__metadata["compression"] is None:
-            return data
-
-        elif self.__metadata["compression"] == "zlib":
+        if self.__metadata["compression"] == "zlib":
             return zlib.compress(data)
 
         else:
@@ -334,13 +319,11 @@ class Advanced():
 
         :param bytes data: The data to decompress.
 
+        :returns str: Unmodified data if compression is None.
         :returns bytes: The decompressed data.
         """
 
-        if self.__metadata["compression"] is None:
-            return data
-
-        elif self.__metadata["compression"] == "zlib":
+        if self.__metadata["compression"] == "zlib":
             return zlib.decompress(data)
 
         else:
@@ -357,14 +340,11 @@ class Advanced():
 
         global aes_support
 
-        if self.__metadata["encryption"] is None:
-            return data
-
-        elif self.__metadata["encryption"] == "aes256":
+        if self.__metadata["encryption"] == "aes256":
             if not aes_support:
                 raise ValueError("AES256 encryption is not supported in this system.")
 
-            return AES256(self.epass).encrypt(data)
+            return AES256(self.epass).encrypt(base64.b64encode(data).decode(self.__metadata["encoding"]))
 
         else:
             raise ValueError(f"Unsupported encryption type `{self.__metadata['encryption']}`")
@@ -378,17 +358,28 @@ class Advanced():
         :returns bytes: The decrypted data.
         """
 
-        if self.__metadata["encryption"] is None:
-            return data
-
-        elif self.__metadata["encryption"] == "aes256":
+        if self.__metadata["encryption"] == "aes256":
             if not aes_support:
                 raise ValueError("AES256 encryption is not supported in this system.")
 
-            return AES256(self.epass).decrypt(data)
+            return base64.b64decode(AES256(self.epass).decrypt(data))
 
         else:
             raise ValueError(f"Unsupported encryption type `{self.__metadata['encryption']}`")
+
+    def _check_key(self, key: str) -> bool:
+        """
+        Returns True if key is valid. Otherwise, raise ValueError.
+
+        :param str key: The key to check
+
+        :returns bool: True if key is valid.
+        """
+
+        if type(key) is not str:
+            raise ValueError(f"Invalid key `{key}`")
+
+        return True
 
     def new(self, name: str, author: str = None, compression: str = None, encryption: str = None, encoding: str = "utf-8") -> None:
         """
@@ -425,16 +416,33 @@ class Advanced():
     def load(self) -> None:
         """
         Load the configuration file.
+
+        Raises a `json.decoder.JSONDecodeError` if the AES encryption password is incorrect,
+        or the configuration file is corrupt.
         """
 
+        # ? Decode (Base64)
+        # ? Decompress
+        # ? Decrypt
+        # ? json to dict.decode()
+
+        # Step 1: Load metadata.
         with open(self.config_path, 'r') as fopen:
             self.__metadata = json.load(fopen)
 
-        self.__dictionary = base64.b64decode(self.__metadata["dictionary"]).decode(self.__metadata["encoding"])
-        self.__dictionary = json.loads(self.__dictionary)
+        # Step 2: Decode dictionary.
+        dictionary = base64.b64decode(self.__metadata["dictionary"].encode(self.__metadata["encoding"]))
 
-        # ? I don't think this is necessary.
-        # self.__metadata.pop("dictionary")
+        # Step 3: If compression is used, decompress dictionary.
+        if self.__metadata["compression"] is not None:
+            dictionary = self.__decompress(dictionary)
+
+        # Step 4: If encryption is used, decrypt dictionary.
+        if self.__metadata["encryption"] is not None:
+            dictionary = self.__decrypt(dictionary)
+
+        # Step 5: Convert JSON to dictionary.
+        self.__dictionary = json.loads(dictionary.decode(self.__metadata["encoding"]))
 
         return
 
@@ -443,9 +451,29 @@ class Advanced():
         Save the configuration file.
         """
 
+        # ? dict to json.encode()
+        # ? Encrypt
+        # ? Compress
+        # ? Encode (Base64)
+
         # self.__metadata will be updated.
         self.__metadata["version"] = self.VERSION
-        self.__metadata["dictionary"] = base64.b64encode(json.dumps(self.__dictionary, indent=4).encode(self.__metadata["encoding"])).decode(self.__metadata["encoding"])
+
+        # Step 1: Convert the dictionary to JSON.
+        dictionary = json.dumps(self.__dictionary).encode(self.__metadata["encoding"])
+
+        # Step 2: If encryption is enabled, encrypt the dictionary.
+        if self.__metadata["encryption"] is not None:
+            dictionary = self.__encrypt(dictionary)
+
+        # Step 3: If compression is enabled, compress the dictionary.
+        if self.__metadata["compression"] is not None:
+            dictionary = self.__compress(dictionary)
+
+        # Step 4: Encode the dictionary to Base64.
+        self.__metadata["dictionary"] = base64.b64encode(dictionary).decode(self.__metadata["encoding"])
+
+        # Step 5: Write metadata to file.
         with open(self.config_path, 'w') as fopen:
             fopen.write(json.dumps(self.__metadata, indent=4))
 
@@ -495,3 +523,10 @@ class Advanced():
         """
 
         return self.__dictionary.keys()
+
+    def metadata(self) -> dict:
+        """
+        Return the metadata of the configuration file.
+        """
+
+        return self.__metadata.pop("dictionary")
