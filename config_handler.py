@@ -155,14 +155,19 @@ class Simple():
         :param str key: The key to check.
         """
 
-        if '=' in key or key.startswith('#') or '\n' in key or type(key) is not str:
-            raise ValueError(f"Invalid key: {key}")
+        if type(key) is not str:  # Separate this check from other checks to avoid TypeError when key is not a str.
+            raise ValueError(f"Invalid key `{key}`")
+
+        if '=' in key or key.startswith('#') or '\n' in key:
+            raise ValueError(f"Invalid key `{key}`")
 
         return
 
     def load(self) -> None:
         """
         Read the config file and store it to self.__data as a dictionary.
+        Call this method when you want to read the configuration file.
+        If you save without calling load(), the configuration file will be overwritten.
 
         :returns void:
         """
