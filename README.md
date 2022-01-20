@@ -11,8 +11,8 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 
 ## Installation
 
-- via pip: `pip install py-config-handler`
-- as a Git submodule: `git submodule add https://github.com/Chris1320/ConfigHandler-python.git`
++ via pip: `pip install py-config-handler`
++ as a Git submodule: `git submodule add https://github.com/Chris1320/ConfigHandler-python.git`
 
 ## Usage
 
