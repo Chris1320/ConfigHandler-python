@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "C:\\Users\\Chris3120\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe",
+    "python.pythonPath": "env\\Scripts\\python.exe",
     "python.testing.unittestArgs": [
         "-v",
         "-s",
@@ -9,5 +9,8 @@
     ],
     "python.testing.pytestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.unittestEnabled": true
+    "python.testing.unittestEnabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.enabled": true
 }

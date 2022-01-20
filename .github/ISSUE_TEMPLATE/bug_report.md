@@ -8,9 +8,10 @@ assignees: Chris1320
 ---
 
 **Affected Parts:**
+
 - [ ] The main module (`config_handler.py` itself)
-- [ ] `Version1()` class of `config_handler.py`
-- [ ] `Version2()` class of `config_handler.py`
+- [ ] `Simple()` class of `config_handler.py`
+- [ ] `Advanced()` class of `config_handler.py`
 - [ ] Other
 
 **Bug Description:**
@@ -31,6 +32,7 @@ Put here a clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **System Information:**
+
 - OS and Version: [e.g. Windows 10]
 - Python Version: [e.g. 3.8]
 - ConfigHandler Version: [You can see it on `config_handler.py`'s `VERSION` variable]
