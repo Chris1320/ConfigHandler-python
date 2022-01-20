@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="py-config_handler",
-    version="0.3.2",
+    version="0.3.3",
     description="Create, update, and remove values from a configuration file made by ConfigHandler.",
     long_description=README,
     long_description_content_type="text/markdown",

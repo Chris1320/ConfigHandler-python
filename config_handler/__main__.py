@@ -387,7 +387,7 @@ def main():
             return 2
 
         except Exception as e:
-            print("\n[E] An error occurred:", e)
+            print("\n[E] An unexpected error occurred:", e)
             input("Press enter to continue...")
             return 1
 
