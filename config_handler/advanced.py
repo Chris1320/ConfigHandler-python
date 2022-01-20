@@ -196,7 +196,7 @@ class Advanced():
             self.__metadata = json.load(fopen)
 
         # check if self.epass is not None.
-        if self.epass is None:
+        if self.epass is None and self.__metadata["encryption"] is not None:
             raise ValueError("The configuration file is encrypted but no password is provided.")
 
         # Step 2: Decode dictionary.

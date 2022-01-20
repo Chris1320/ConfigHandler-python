@@ -2,6 +2,8 @@
 
 ## Description
 
+> **NOTE**: Configuration files made by *ConfigHandler v0.0.2.1* are not compatible with *ConfigHandler v0.3.0*.
+
 Create, update, and remove values from a configuration file made by ConfigHandler.
 
 + ***Simple Mode***: Store simple data (e.g., version, program statistics, etc.) in a single file.
