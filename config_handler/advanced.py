@@ -131,7 +131,7 @@ class Advanced():
         else:
             raise ValueError(f"Unsupported encryption type `{self.__metadata['encryption']}`")
 
-    def _check_key(self, key: str) -> bool:
+    def _checkKey(self, key: str) -> bool:
         """
         Returns True if key is valid. Otherwise, raise ValueError.
 
@@ -267,7 +267,7 @@ class Advanced():
         Set value of a key on `self.__dictionary`.
         """
 
-        self._check_key(key)
+        self._checkKey(key)
         self.__dictionary[key] = value
 
     def get(self, key):

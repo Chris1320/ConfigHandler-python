@@ -55,7 +55,7 @@ class Simple():
         self.__readonly = readonly
         self.__data = {}  # We will put the contents of the configuration file here.
 
-    def _parse_key(self, key: str) -> None:
+    def _parseKey(self, key: str) -> None:
         """
         Check if the key is valid. Raises a ValueError if the key is invalid.
 
@@ -147,7 +147,7 @@ class Simple():
         :param value: The value to add.
         """
 
-        self._parse_key(key)  # Check if the key is valid.
+        self._parseKey(key)  # Check if the key is valid.
         self.__data[key] = value
         return
 

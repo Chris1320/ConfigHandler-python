@@ -43,7 +43,7 @@ except ImportError:
     prettytable_support = False
 
 
-def prompt_generator(open_configfile: str = None):
+def promptGenerator(open_configfile: str = None):
     """
     Changes the prompt if a configuration file is open.
 
@@ -57,7 +57,7 @@ def prompt_generator(open_configfile: str = None):
         return f"{open_configfile} >>> "
 
 
-def helpmenu(config_file: str = None):
+def helpMenu(config_file: str = None):
     """
     Show a help menu.
     """
@@ -150,10 +150,10 @@ def main():
 
     while True:
         try:
-            command = str(input(prompt_generator(config_file)))
+            command = str(input(promptGenerator(config_file)))
 
             if command == "help":
-                helpmenu(config_file)
+                helpMenu(config_file)
                 continue
 
             elif command.startswith("status"):
@@ -200,7 +200,7 @@ def main():
                     print(f"Encoding set to `{encoding}`.")
 
                 else:
-                    helpmenu(config_file)
+                    helpMenu(config_file)
 
                 continue
 
@@ -230,7 +230,7 @@ def main():
                 if command.startswith("open"):
                     config_file = command.partition(' ')[2]
                     if config_file == '':
-                        helpmenu(config_file)
+                        helpMenu(config_file)
                         config_file = None
                         continue
 
@@ -355,7 +355,7 @@ def main():
                             print(e)
 
                     except IndexError:
-                        helpmenu(config_file)
+                        helpMenu(config_file)
 
                     else:
                         config.set(key, value)
@@ -368,7 +368,7 @@ def main():
                         print(config.get(command.partition(' ')[2]))
 
                     except(IndexError, KeyError):
-                        helpmenu(config_file)
+                        helpMenu(config_file)
 
                 elif command.startswith("remove"):
                     try:
@@ -376,7 +376,7 @@ def main():
                         print("Key removed.")
 
                     except(IndexError, KeyError):
-                        helpmenu(config_file)
+                        helpMenu(config_file)
 
                 else:
                     print(f"[E] Unknown command `{command}`.")
