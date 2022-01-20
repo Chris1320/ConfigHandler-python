@@ -28,241 +28,7 @@ import json
 import zlib
 import base64
 
-from hashlib import sha256
-
-try:
-    from Cryptodome import Random
-    from Cryptodome.Cipher import AES
-    aes_support = True
-
-except ModuleNotFoundError:
-    try:  # Try to use the alternative library.
-        from Crypto import Random
-        from Crypto.Cipher import AES
-        aes_support = True
-
-    except ModuleNotFoundError:
-        aes_support = False
-
-
-VERSION = (0, 3, 0)
-
-if aes_support:  # Initialize Cipher() class only if Cryptodome module is available.
-    class AES256():
-        """
-        The class that contains methods for working with AES-256.
-
-        Found this solution from StackOverflow.
-        https://stackoverflow.com/questions/12524994/encrypt-decrypt-using-pycrypto-aes-256
-        """
-
-        def __init__(self, key: str, encoding: str = "utf-8"):
-            """
-            The initialization method of AES256() class.
-
-            :param str key: The key/password of the message.
-            :param str encoding: The encoding of the message.
-            """
-
-            self.VERSION = (0, 1, 2)
-
-            self.bs = AES.block_size  # The block size
-            self.encoding = encoding  # The encoding to be used when calling `encode()` and `decode()`.
-            self.key = sha256(key.encode(self.encoding)).digest()  # The hashed key
-
-        def encrypt(self, message: str) -> bytes:
-            """
-            Encrypt <message> using <self.key> as the key/password. Overridable method.
-
-            :param str message: The message to encrypt.
-
-            :returns bytes: The ciphertext.
-            """
-
-            padded_message = self._pad(message)
-            iv = Random.new().read(AES.block_size)
-            cipher = AES.new(self.key, AES.MODE_CBC, iv)
-
-            emessage = padded_message.encode(self.encoding)  # Encoded message
-            ciphertext = base64.b64encode(iv + cipher.encrypt(emessage))
-
-            return ciphertext
-
-        def decrypt(self, ciphertext: bytes) -> str:
-            """
-            Decrypt <ciphertext> using <self.key> as the key/password. Overridable method.
-
-            :param bytes ciphertext: The ciphertext to decrypt.
-
-            :returns str: The plaintext version of the ciphertext.
-            """
-
-            ciphertext = base64.b64decode(ciphertext)
-            iv = ciphertext[:AES.block_size]  # Get the iv from the ciphertext
-            cipher = AES.new(self.key, AES.MODE_CBC, iv)
-            decrypted = cipher.decrypt(ciphertext[AES.block_size:])
-            plaintext = self._unpad(decrypted).decode(self.encoding)
-
-            return plaintext
-
-        def _pad(self, s):
-            """
-            Add a padding to <s>.
-            """
-
-            return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
-
-        @staticmethod
-        def _unpad(s):
-            """
-            Remove padding from <s>.
-            """
-
-            return s[:-ord(s[len(s) - 1:])]
-
-
-class Simple():
-    """
-    A class the creates and manipulates a "simple" configuration file.
-
-    + This mode is for storing string, integer, and decimals only.
-    + Comments are supported by appending `#` at the beginning of the line.
-    + Each line of the file contains one key-value pair separated by an equal (=) sign.
-    """
-
-    def __init__(self, config_path: str, isbase64: bool = False, encoding: str = "utf-8", readonly: bool = False):
-        """
-        The initialization method for Simple() class.
-
-        :param str config_path: The path of the configuration file to use.
-        :param bool isbase64: True if the configuration file is encoded via Base64.
-        :param str encoding: The encoding to be used.
-        :param bool readonly: True if the configuration file is read-only.
-        """
-
-        self.VERSION = (0, 2, 0)  # Parser version
-
-        self.isbase64 = isbase64
-        self.encoding = encoding
-
-        self._config_path = config_path
-        self.__readonly = readonly
-        self.__data = {}  # We will put the contents of the configuration file here.
-
-    def _parse_key(self, key: str) -> None:
-        """
-        Check if the key is valid. Raises a ValueError if the key is invalid.
-
-        :param str key: The key to check.
-        """
-
-        if type(key) is not str:  # Separate this check from other checks to avoid TypeError when key is not a str.
-            raise ValueError(f"Invalid key `{key}`")
-
-        if '=' in key or key.startswith('#') or '\n' in key:
-            raise ValueError(f"Invalid key `{key}`")
-
-        return
-
-    def load(self) -> None:
-        """
-        Read the config file and store it to self.__data as a dictionary.
-        Call this method when you want to read the configuration file.
-        If you save without calling load(), the configuration file will be overwritten.
-
-        :returns void:
-        """
-
-        with open(self._config_path, 'r') as fopen:
-            if self.isbase64:  # Decode data if it is Base64 encoded.
-                config_data = base64.b64decode(fopen.read()).decode(self.encoding)
-
-            else:
-                config_data = fopen.read()
-
-        for line in config_data.splitlines():
-            if line.startswith('#'):
-                continue  # Skip comments.
-
-            data = line.partition('=')  # * data[0] is the key, data[1] is the separator, data[2] is the value.
-
-            # Write the key-value pair to `self.__data`.
-            if data[2].partition('.')[0].isdigit() and data[2].partition('.')[2].isdigit():
-                self.__data[data[0]] = float(data[2])
-
-            elif data[2].isdigit():
-                self.__data[data[0]] = int(data[2])
-
-            elif data[2].lower() in ("true", "false"):
-                if data[2].lower() == "true":
-                    self.__data[data[0]] = True
-
-                else:
-                    self.__data[data[0]] = False
-
-            else:
-                self.__data[data[0]] = str(data[2])
-
-    def save(self) -> None:
-        """
-        Save the config file. Raises a PermissionError if the configuration file is read-only.
-
-        :returns void:
-        """
-
-        if self.__readonly:
-            raise PermissionError("The configuration file is read-only.")
-
-        config_data = ""  # Let's initialize it as an empty string first.
-        for key in self.__data:
-            config_data += f"{key}={self.__data[key]}\n"  # Write the key-value pair to the config file.
-
-        with open(self._config_path, 'w') as fopen:
-            if self.isbase64:
-                fopen.write(base64.b64encode(config_data.encode(self.encoding)).decode(self.encoding))
-
-            else:
-                fopen.write(config_data)
-
-        return
-
-    def get(self, key: str) -> str:
-        """
-        Get the value of <key> from `self.__data`.
-        """
-
-        return self.__data[key]  # Will raise a KeyError exception if the key is not found.
-
-    def set(self, key: str, value) -> None:
-        """
-        Add or update a new key-value pair to `self.__data`.
-
-        :param str key: The key to add.
-        :param value: The value to add.
-        """
-
-        self._parse_key(key)  # Check if the key is valid.
-        self.__data[key] = value
-        return
-
-    def remove(self, key: str) -> None:
-        """
-        Remove a key-value pair from `self.__data`.
-
-        :param str key: The key to remove.
-        """
-
-        self.__data.pop(key)
-        return
-
-    def keys(self) -> list:
-        """
-        Get all the keys in `self.__data`.
-
-        :returns list: The list of keys.
-        """
-
-        return self.__data.keys()
+from . import ciphers
 
 
 class Advanced():
@@ -338,13 +104,11 @@ class Advanced():
         :returns bytes: The encrypted data.
         """
 
-        global aes_support
-
         if self.__metadata["encryption"] == "aes256":
-            if not aes_support:
+            if not ciphers.aes_support:
                 raise ValueError("AES256 encryption is not supported in this system.")
 
-            return AES256(self.epass).encrypt(base64.b64encode(data).decode(self.__metadata["encoding"]))
+            return ciphers.AES256(self.epass).encrypt(base64.b64encode(data).decode(self.__metadata["encoding"]))
 
         else:
             raise ValueError(f"Unsupported encryption type `{self.__metadata['encryption']}`")
@@ -359,10 +123,10 @@ class Advanced():
         """
 
         if self.__metadata["encryption"] == "aes256":
-            if not aes_support:
+            if not ciphers.aes_support:
                 raise ValueError("AES256 encryption is not supported in this system.")
 
-            return base64.b64decode(AES256(self.epass).decrypt(data))
+            return base64.b64decode(ciphers.AES256(self.epass).decrypt(data))
 
         else:
             raise ValueError(f"Unsupported encryption type `{self.__metadata['encryption']}`")
@@ -419,6 +183,7 @@ class Advanced():
 
         Raises a `json.decoder.JSONDecodeError` if the AES encryption password is incorrect,
         or the configuration file is corrupt.
+        Raises a `ValueError` if the password is not provided and the configuration file is encrypted.
         """
 
         # ? Decode (Base64)
@@ -429,6 +194,10 @@ class Advanced():
         # Step 1: Load metadata.
         with open(self.config_path, 'r') as fopen:
             self.__metadata = json.load(fopen)
+
+        # check if self.epass is not None.
+        if self.epass is None:
+            raise ValueError("The configuration file is encrypted but no password is provided.")
 
         # Step 2: Decode dictionary.
         dictionary = base64.b64decode(self.__metadata["dictionary"].encode(self.__metadata["encoding"]))
@@ -529,4 +298,6 @@ class Advanced():
         Return the metadata of the configuration file.
         """
 
-        return self.__metadata.pop("dictionary")
+        metadata = self.__metadata.copy()
+        metadata.pop("dictionary")
+        return metadata

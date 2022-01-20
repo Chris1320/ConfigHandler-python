@@ -37,7 +37,7 @@ config.save()  # Save the data to the file.
 
 ```python
 
-from config_handler import Simple
+from config_handler.simple import Simple
 
 config = Simple("config.ini")
 
@@ -70,7 +70,7 @@ A value can by any string, integer, or float.
 
 ```python
 
-from config_handler import Advanced
+from config_handler.advanced import Advanced
 
 config = Advanced("config.ini")
 
