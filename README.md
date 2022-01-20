@@ -79,7 +79,7 @@ A value can by any string, integer, or float.
 
 from config_handler.advanced import Advanced
 
-config = Advanced("config.ini")
+config = Advanced("config.ini", "p4ssw0rd")  # Password is required when encryption is not None.
 
 config.new(
     name="Advanced Mode Test",
@@ -108,7 +108,7 @@ config.save()  # Save the data to the file.
 
 from config_handler.advanced import Advanced
 
-config = Advanced("config.ini")
+config = Advanced("config.ini", "p4ssw0rd")  # Password is required when encryption is not None.
 
 # Load the data from the file.
 config.load()
