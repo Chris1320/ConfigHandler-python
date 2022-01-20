@@ -68,7 +68,7 @@ config.save()
 
 ```
 
-A key can be any string, but must not start with a `#`, include a `=`, or include a `\\n`.
+A key can be any string, but must not start with a `#`, include a `=`, or include a `\n`.
 A value can by any string, integer, or float.
 
 ### Advanced Mode
