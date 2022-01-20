@@ -96,3 +96,31 @@ config.remove("unintentional variable!")
 config.save()  # Save the data to the file.
 
 ```
+
+**[QuickStart]** Loading an Existing Configuration File
+
+```python
+
+from config_handler.advanced import Advanced
+
+config = Advanced("config.ini")
+
+# Load the data from the file.
+config.load()
+
+# Get values from the loaded data.
+config.get("foo")  # "foo" is the key.
+
+# Change value of a key.
+config.set("foo", "barred")
+
+# Add a new key-value pair.
+config.set("new_key", "new_value")
+
+# Encode configuration file to Base64.
+config.metadata()  # Get metadata of the configuration file.
+
+# Save changes
+config.save()
+
+```

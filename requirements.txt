@@ -1,1 +1,2 @@
-pycryptodomex
+pycryptodomex==3.12.0
+prettytable==3.0.0

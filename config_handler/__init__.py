@@ -24,6 +24,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from . import simple, advanced
-
-version = (0, 3, 0)
+from . import simple, advanced, info
