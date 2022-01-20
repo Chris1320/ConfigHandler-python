@@ -25,5 +25,5 @@ SOFTWARE.
 """
 
 name = "ConfigHandler"
-version = (0, 3, 0)
+version = (0, 3, 2)
 title = f"{name} v{'.'.join(map(str, version))}"

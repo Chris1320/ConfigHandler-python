@@ -346,12 +346,16 @@ def main():
 
                 elif command.startswith("set"):
                     commands = shlex.split(command)
-                    key = commands[1]
                     try:
-                        value = parse(commands[2])
+                        key = commands[1]
+                        try:
+                            value = parse(commands[2])
 
-                    except ValueError as e:
-                        print(e)
+                        except ValueError as e:
+                            print(e)
+
+                    except IndexError:
+                        helpmenu(config_file)
 
                     else:
                         config.set(key, value)
@@ -360,13 +364,19 @@ def main():
                         del commands
 
                 elif command.startswith("get"):
-                    print(config.get(command.partition(' ')[2]))
-                    continue
+                    try:
+                        print(config.get(command.partition(' ')[2]))
+
+                    except(IndexError, KeyError):
+                        helpmenu(config_file)
 
                 elif command.startswith("remove"):
-                    config.remove(command.partition(' ')[2])
-                    print("Key removed.")
-                    continue
+                    try:
+                        config.remove(command.partition(' ')[2])
+                        print("Key removed.")
+
+                    except(IndexError, KeyError):
+                        helpmenu(config_file)
 
                 else:
                     print(f"[E] Unknown command `{command}`.")
