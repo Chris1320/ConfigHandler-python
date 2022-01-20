@@ -22,7 +22,7 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 
 ```python
 
-from config_handler import Simple
+from config_handler.simple import Simple
 
 config = Simple("config.ini")
 
