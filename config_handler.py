@@ -25,6 +25,7 @@ SOFTWARE.
 """
 
 import json
+import zlib
 import base64
 
 from hashlib import sha256
@@ -283,6 +284,7 @@ class Advanced():
         self.VERSION = (0, 2, 0)  # Parser version
 
         self.config_path = config_path
+        self.epass = epass
         self.__readonly = readonly
 
         self.__metadata = {}  # Metadata of the configuration file.
@@ -293,6 +295,100 @@ class Advanced():
             "encryption": ("aes256",),
             "valuetypes": (str, int, float, bool, list, tuple, dict)
         }
+
+    def _check_key(self, key: str) -> bool:
+        """
+        Returns True if key is valid. Otherwise, raise ValueError.
+
+        :param str key: The key to check
+
+        :returns bool: True if key is valid.
+        """
+
+        if type(key) is not str:
+            raise ValueError(f"Invalid key `{key}`")
+
+        return True
+
+    def __compress(self, data: bytes) -> bytes:
+        """
+        Compress <data>. Raises ValueError if the compression method is not supported.
+
+        :param bytes data: The data to compress.
+
+        :returns bytes: The compressed data.
+        """
+
+        if self.__metadata["compression"] is None:
+            return data
+
+        elif self.__metadata["compression"] == "zlib":
+            return zlib.compress(data)
+
+        else:
+            raise ValueError(f"Unsupported compression type `{self.__metadata['compression']}`")
+
+    def __decompress(self, data: bytes) -> bytes:
+        """
+        Decompress <data>. Raises ValueError if the compression method is not supported.
+
+        :param bytes data: The data to decompress.
+
+        :returns bytes: The decompressed data.
+        """
+
+        if self.__metadata["compression"] is None:
+            return data
+
+        elif self.__metadata["compression"] == "zlib":
+            return zlib.decompress(data)
+
+        else:
+            raise ValueError(f"Unsupported compression type `{self.__metadata['compression']}`")
+
+    def __encrypt(self, data: bytes) -> bytes:
+        """
+        Encryp <data>. Raises ValueError if the encryption method is not supported.
+
+        :param bytes data: The data to be encrypted.
+
+        :returns bytes: The encrypted data.
+        """
+
+        global aes_support
+
+        if self.__metadata["encryption"] is None:
+            return data
+
+        elif self.__metadata["encryption"] == "aes256":
+            if not aes_support:
+                raise ValueError("AES256 encryption is not supported in this system.")
+
+            return AES256(self.epass).encrypt(data)
+
+        else:
+            raise ValueError(f"Unsupported encryption type `{self.__metadata['encryption']}`")
+
+    def __decrypt(self, data: bytes) -> bytes:
+        """
+        Decrypt <data>. Raises ValueError if the encryption method is not supported.
+
+        :param bytes data: The data to decrypt.
+
+        :returns bytes: The decrypted data.
+        """
+
+        if self.__metadata["encryption"] is None:
+            return data
+
+        elif self.__metadata["encryption"] == "aes256":
+            if not aes_support:
+                raise ValueError("AES256 encryption is not supported in this system.")
+
+            return AES256(self.epass).decrypt(data)
+
+        else:
+            raise ValueError(f"Unsupported encryption type `{self.__metadata['encryption']}`")
 
     def new(self, name: str, author: str = None, compression: str = None, encryption: str = None, encoding: str = "utf-8") -> None:
         """
@@ -320,7 +416,9 @@ class Advanced():
         self.__metadata["encryption"] = encryption
         self.__metadata["encoding"] = encoding
         self.__metadata["version"] = self.VERSION
-        self.__metadata["dictionary"] = {}
+        self.__metadata["dictionary"] = ""
+
+        self.__dictionary = {}
 
         self.save()  # Save the new configuration file to `self.config_path`.
 
@@ -330,9 +428,10 @@ class Advanced():
         """
 
         with open(self.config_path, 'r') as fopen:
-            self.__metadata = self.json.load(fopen)
+            self.__metadata = json.load(fopen)
 
         self.__dictionary = base64.b64decode(self.__metadata["dictionary"]).decode(self.__metadata["encoding"])
+        self.__dictionary = json.loads(self.__dictionary)
 
         # ? I don't think this is necessary.
         # self.__metadata.pop("dictionary")
@@ -345,10 +444,10 @@ class Advanced():
         """
 
         # self.__metadata will be updated.
-        self.__data["version"] = self.VERSION
-        self.__data["dictionary"] = base64.b64encode(self.__dictionary.encode(self.__data["encoding"])).decode(self.__data["encoding"])
-        with open(self.config_path, 'r') as fopen:
-            fopen.write(self.json.dumps(self.__data, indent=4))
+        self.__metadata["version"] = self.VERSION
+        self.__metadata["dictionary"] = base64.b64encode(json.dumps(self.__dictionary, indent=4).encode(self.__metadata["encoding"])).decode(self.__metadata["encoding"])
+        with open(self.config_path, 'w') as fopen:
+            fopen.write(json.dumps(self.__metadata, indent=4))
 
         return
 
@@ -371,6 +470,7 @@ class Advanced():
         Set value of a key on `self.__dictionary`.
         """
 
+        self._check_key(key)
         self.__dictionary[key] = value
 
     def get(self, key):
@@ -379,3 +479,19 @@ class Advanced():
         """
 
         return self.__dictionary[key]
+
+    def remove(self, key) -> None:
+        """
+        Remove a key from `self.__dictionary`.
+        """
+
+        self.__dictionary.pop(key)
+
+    def keys(self) -> list:
+        """
+        Get all the keys in `self.__dictionary`.
+
+        :returns list: The list of keys.
+        """
+
+        return self.__dictionary.keys()
