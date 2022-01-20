@@ -9,6 +9,11 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 + ***Simple Mode***: Store simple data (e.g., version, program statistics, etc.) in a single file.
 + ***Advanced Mode***: Store configuration data using JSON data format. Supports metadata, encryption, and compression.
 
+## Installation
+
+- via pip: `pip install py-config-handler`
+- as a Git submodule: `git submodule add https://github.com/Chris1320/ConfigHandler-python.git`
+
 ## Usage
 
 ### Simple Mode
