@@ -30,18 +30,18 @@ from hashlib import sha256
 try:
     from Cryptodome import Random
     from Cryptodome.Cipher import AES
-    aes_support = True
+    cryptodome_support = True
 
 except ModuleNotFoundError:
     try:  # Try to use the alternative library.
         from Crypto import Random
         from Crypto.Cipher import AES
-        aes_support = True
+        cryptodome_support = True
 
     except ModuleNotFoundError:
-        aes_support = False
+        cryptodome_support = False
 
-if aes_support:  # Initialize Cipher() class only if Cryptodome module is available.
+if cryptodome_support:  # Initialize Cipher() class only if Cryptodome module is available.
     class AES256():
         """
         The class that contains methods for working with AES-256.
