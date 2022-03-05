@@ -24,4 +24,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from . import simple, advanced, info, exceptions
+
+class ChecksumError(Exception):
+    """
+    Exception raised when the checksum of the dictionary is invalid.
+    """
+
+    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
+        super().__init__(message)
