@@ -27,6 +27,7 @@ SOFTWARE.
 name = "ConfigHandler"
 version = (1, 0, 0)
 release = "dev"  # `stable`, `beta`, `dev`
+full_ver = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
 
 if release == "stable":
     title = f"{name} v{'.'.join(map(str, version))}"
