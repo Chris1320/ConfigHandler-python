@@ -3,3 +3,6 @@ __pycache__
 env/
 dist/
 *.egg-info/
+
+# Used as a temporary file when manually testing the package.
+test.conf

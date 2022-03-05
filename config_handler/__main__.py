@@ -66,9 +66,10 @@ def helpMenu(config_file: str = None):
     print("help                   Show this help menu.")
     print("status                 Show current configuration.")
     print()
-    print("base64                 Toggle base64 encoding.")
+    print("base64                 Toggle base64 encoding. (Only for `simple` mode.)")
     print("encoding <encoding>    Set encoding to use.")
-    print("password               Set password.")
+    print("password               Set password. (Only for encrypted config files in `advanced` mode.)")
+    print("clrpw                  Remove set password.")
     print("readonly               Toogle read-only mode.")
     print("mode <mode>            Change the config handler.")
     print("    simple             Simple mode.")
@@ -78,6 +79,7 @@ def helpMenu(config_file: str = None):
         print("open <filename>        Open a configuration file.")
 
     else:
+        print("new                    Create a new configuration file. (Only for `advanced` mode.)")
         print("close                  Close the current configuration file.")
         print("save                   Save the current configuration file.")
         print("get <key>              Get a value from the configuration file.")
@@ -85,6 +87,7 @@ def helpMenu(config_file: str = None):
         print("remove <key>           Remove a value from the configuration file.")
         print("keys                   Show all available keys in the configuration file.")
         print("list                   Show all available keys and values in the configuration file.")
+        print("metadata               Show the metadata of the configuration file.")
 
     print()
     print("exit                   Exit the program.")
@@ -168,7 +171,7 @@ def main():
                 print("Read-only:                  ", readonly)
                 print("Base64:                     ", base64)
                 print()
-                print("Password:                   ", ("*" * len(password) if password is not None else "None"))
+                print("Password:                   ", ("*" * 12 if password is not None else "None"))
                 print()
                 continue
 
@@ -186,6 +189,10 @@ def main():
             elif command.startswith("password"):
                 password = getpass("Enter password: ")
                 print("[i] Password set.")
+
+            elif command.startswith("clrpw"):
+                password = None
+                print("[i] Password removed.")
 
             elif command.startswith("base64"):
                 if base64:
@@ -309,8 +316,26 @@ def main():
                         config_name = input("Configuration File Name (Blank for None): ")
                         config_author = input("Configuration File Author (Blank for None): ")
                         config_compression = input("Configuration File Compression (Blank for None): ")
+                        while config_compression not in advanced.Advanced.supported["compression"]:
+                            if config_compression == '':
+                                break
+
+                            for available_compression_algorithm in advanced.Advanced.supported["compression"]:
+                                print("+", available_compression_algorithm)
+
+                            print()
+                            config_compression = input("Configuration File Compression (Blank for None): ")
+
                         config_encryption = input("Configuration File Encryption (Blank for None): ")
-                        config_encoding = input("Configuration File Encoding (Blank for `utf-8`): ")
+                        while config_encryption not in advanced.Advanced.supported["encryption"]:
+                            if config_encryption == '':
+                                break
+
+                            for available_encryption_algorithm in advanced.Advanced.supported["encryption"]:
+                                print("+", available_encryption_algorithm)
+
+                            print()
+                            config_encryption = input("Configuration File Encryption (Blank for None): ")
 
                         if config_name == '':
                             config_name = None
@@ -324,17 +349,19 @@ def main():
                         if config_encryption == '':
                             config_encryption = None
 
-                        if config_encoding == '':
-                            config_encoding = "utf-8"
-
                         print("Creating configuration file...")
-                        config.new(
-                            config_name,
-                            config_author,
-                            config_compression,
-                            config_encryption,
-                            config_encoding
-                        )
+                        try:
+                            config.new(
+                                config_name,
+                                config_author,
+                                config_compression,
+                                config_encryption,
+                                encoding
+                            )
+
+                        except AssertionError:
+                            print("[E] An assertion error occured.")
+
                         continue
 
                 elif command.startswith("save"):
@@ -369,18 +396,59 @@ def main():
 
                 elif command.startswith("get"):
                     try:
-                        print(config.get(command.partition(' ')[2]))
+                        print(config.get(shlex.split(command)[1]))
 
                     except(IndexError, KeyError):
                         helpMenu(config_file)
 
                 elif command.startswith("remove"):
                     try:
-                        config.remove(command.partition(' ')[2])
+                        config.remove(shlex.split(command)[1])
                         print("Key removed.")
 
                     except(IndexError, KeyError):
                         helpMenu(config_file)
+
+                elif command.startswith("metadata"):
+                    if mode != "advanced":
+                        print("[E] You can only call `metadata` in advanced mode.")
+                        continue
+
+                    try:
+                        metadata = config.metadata()
+
+                    except KeyError:
+                        print("[E] The configuration file is not yet loaded or created.")
+                        continue
+
+                    if prettytable_support:
+                        table = prettytable.PrettyTable()
+                        table.field_names = ["Key", "Value"]
+                        for key in metadata:
+                            if key == "version":
+                                table.add_row([key, '.'.join(map(str, metadata[key]))])
+
+                            elif key == "dictionary_size":
+                                table.add_row(["Number of Entries in The Dictionary", metadata[key]])
+
+                            else:
+                                table.add_row([key, metadata[key]])
+
+                        print(table)
+                        print()
+
+                    else:
+                        for key in metadata:
+                            if key == "version":
+                                print(f"+ {key}: {'.'.join(map(str, metadata[key]))}")
+
+                            elif key == "dictionary_size":
+                                print(f"+ There are `{metadata[key]}` entries in the dictionary.")
+
+                            else:
+                                print(f"+ {key}: {metadata[key]}")
+
+                        print()
 
                 else:
                     print(f"[E] Unknown command `{command}`.")

@@ -45,6 +45,15 @@ class Advanced():
     + This mode is for storing any datatype supported by the JSON data format.
     """
 
+    VERSION = (1, 0, 0)  # Parser version
+
+    # All compression and encryption methods must accept and return `bytes` type.
+    supported = {
+        "compression": ("zlib", "lz4"),
+        "encryption": ("aes256",),
+        "valuetypes": (str, int, float, bool, list, tuple, dict)
+    }
+
     def __init__(self, config_path: str, epass: str = None, readonly: bool = False):
         """
         The initialization method of Advanced() class.
@@ -54,21 +63,12 @@ class Advanced():
         :param bool readonly: True if the configuration file is read-only.
         """
 
-        self.VERSION = (1, 0, 0)  # Parser version
-
         self.config_path = config_path
         self.epass = epass
         self.__readonly = readonly
 
         self.__metadata = {}  # Metadata of the configuration file.
         self.__dictionary = {}  # The actual data of the configuration file.
-
-        # All compression and encryption methods must accept and return `bytes` type.
-        self.supported = {
-            "compression": ("zlib", "lz4"),
-            "encryption": ("aes256",),
-            "valuetypes": (str, int, float, bool, list, tuple, dict)
-        }
 
     def __compress(self, data: bytes) -> bytes:
         """
@@ -180,8 +180,8 @@ class Advanced():
         if self.__readonly:
             raise PermissionError("The configuration file is read-only.")
 
-        assert compression in self.supported["compression"] or compression is None
-        assert encryption in self.supported["encryption"] or encryption is None
+        assert compression in Advanced.supported["compression"] or compression is None
+        assert encryption in Advanced.supported["encryption"] or encryption is None
         assert "encoding test".encode(encoding)  # Check if the encoding is valid.
 
         self.__metadata["name"] = name
@@ -189,7 +189,7 @@ class Advanced():
         self.__metadata["compression"] = compression
         self.__metadata["encryption"] = encryption
         self.__metadata["encoding"] = encoding
-        self.__metadata["version"] = self.VERSION
+        self.__metadata["version"] = Advanced.VERSION
         self.__metadata["dictionary"] = ""
 
         self.__dictionary = {}
@@ -245,7 +245,7 @@ class Advanced():
         # ? Encode (Base64)
 
         # self.__metadata will be updated.
-        self.__metadata["version"] = self.VERSION
+        self.__metadata["version"] = Advanced.VERSION
 
         # Step 1: Convert the dictionary to JSON.
         dictionary = json.dumps(self.__dictionary).encode(self.__metadata["encoding"])
@@ -305,4 +305,5 @@ class Advanced():
 
         metadata = self.__metadata.copy()
         metadata.pop("dictionary")
+        metadata["dictionary_size"] = len(self.__dictionary)
         return metadata
