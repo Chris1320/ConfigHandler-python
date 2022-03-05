@@ -2,6 +2,7 @@ __pycache__
 *.pyc
 env/
 dist/
+build/
 *.egg-info/
 
 # Used as a temporary file when manually testing the package.

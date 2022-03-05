@@ -1,6 +1,6 @@
 from setuptools import setup
 
-from .config_handler import info
+from config_handler import info
 
 with open("README.md", "r") as f:
     README = f.read()  # Read the contents of `README.md` file.
@@ -26,7 +26,7 @@ setup(
     packages=["config_handler"],
     include_package_data=True,
     install_requires=[],  # Required packages
-    extras_requires={  # Optional packages for optional features
+    extras_require={  # Optional packages for optional features
         "AES Encryption": ["pycryptodomex"],
         "Pretty Table": ["prettytable"],
         "LZ4 Compression": ["lz4"],
