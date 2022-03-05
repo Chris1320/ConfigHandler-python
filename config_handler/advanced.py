@@ -252,7 +252,7 @@ class Advanced():
         if strict:
             # Check if `checksum` exists in `self.__metadata`.
             if "checksum" not in self.__metadata and self.__metadata["version"][0] < 1:
-                # If the configuration file is made by ConfigHandler v0.x.x, generate a new checksum value.
+                # If the configuration file is made by Advanced mode parser v0.x.x, generate a new checksum value.
                 self.__metadata["checksum"] = self._generateChecksum(dictionary)
 
             else:
