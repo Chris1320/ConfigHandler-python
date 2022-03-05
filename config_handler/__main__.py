@@ -94,6 +94,8 @@ def helpMenu(config_file: str = None):
     print()
     print("exit                   Exit the program.")
     print()
+    print('=' * 40)
+    print()
     print("When setting a value, you can explicitly convert them using the following:")
     print("    + str:<value>       Convert <value> to a string.")
     print("    + int:<value>       Convert <value> to an integer.")
