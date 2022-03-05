@@ -34,6 +34,7 @@ from getpass import getpass
 from . import info
 from . import simple
 from . import advanced
+from . import exceptions
 
 try:
     import prettytable
@@ -71,6 +72,7 @@ def helpMenu(config_file: str = None):
     print("password               Set password. (Only for encrypted config files in `advanced` mode.)")
     print("clrpw                  Remove set password.")
     print("readonly               Toogle read-only mode.")
+    print("strict                 Toggle strict mode. (Only for `advanced` mode.)")
     print("mode <mode>            Change the config handler.")
     print("    simple             Simple mode.")
     print("    advanced           Advanced mode.")
@@ -153,6 +155,7 @@ def main():
     mode = "simple"  # The default mode.
     encoding = "utf-8"  # The default encoding.
     readonly = False  # The default read-only mode.
+    strict = True  # The default strict mode.
     base64 = False  # The default base64 encoding mode.
 
     while True:
@@ -169,6 +172,7 @@ def main():
                 print("Config Mode:                ", mode)
                 print("Encoding:                   ", encoding)
                 print("Read-only:                  ", readonly)
+                print("Strict Mode:                ", strict)
                 print("Base64:                     ", base64)
                 print()
                 print("Password:                   ", ("*" * 12 if password is not None else "None"))
@@ -176,13 +180,12 @@ def main():
                 continue
 
             elif command.startswith("readonly"):
+                readonly = not readonly
                 if readonly:
-                    readonly = False
-                    print("Read-only mode disabled.")
+                    print("Read-only mode enabled.")
 
                 else:
-                    readonly = True
-                    print("Read-only mode enabled.")
+                    print("Read-only mode disabled.")
 
                 continue
 
@@ -195,13 +198,12 @@ def main():
                 print("[i] Password removed.")
 
             elif command.startswith("base64"):
+                base64 = not base64
                 if base64:
-                    base64 = False
-                    print("Base64 encoding disabled.")
+                    print("Base64 encoding enabled.")
 
                 else:
-                    base64 = True
-                    print("Base64 encoding enabled.")
+                    print("Base64 encoding disabled.")
 
                 continue
 
@@ -212,6 +214,16 @@ def main():
 
                 else:
                     helpMenu(config_file)
+
+                continue
+
+            elif command.startswith("strict"):
+                strict = not strict
+                if strict:
+                    print("Strict mode enabled.")
+
+                else:
+                    print("Strict mode disabled.")
 
                 continue
 
@@ -280,9 +292,17 @@ def main():
                     continue
 
                 elif command.startswith("load"):
-                    config.load()
-                    print("[i] Configuration file loaded.")
-                    continue
+                    try:
+                        config.load(strict)
+
+                    except exceptions.ChecksumError as e:
+                        print("[E]", e)
+                        print("[i] Disable strict mode to bypass this error.")
+                        continue
+
+                    else:
+                        print("[i] Configuration file loaded.")
+                        continue
 
                 elif command.startswith("keys"):
                     print("Available keys:")
@@ -431,6 +451,9 @@ def main():
                             elif key == "dictionary_size":
                                 table.add_row(["Number of Entries in The Dictionary", metadata[key]])
 
+                            elif key == "checksum":
+                                table.add_row(["Dictionary Checksum", metadata[key]])
+
                             else:
                                 table.add_row([key, metadata[key]])
 
@@ -444,6 +467,9 @@ def main():
 
                             elif key == "dictionary_size":
                                 print(f"+ There are `{metadata[key]}` entries in the dictionary.")
+
+                            elif key == "checksum":
+                                print(f"+ Dictionary Checksum: {metadata[key]}")
 
                             else:
                                 print(f"+ {key}: {metadata[key]}")

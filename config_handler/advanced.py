@@ -177,7 +177,7 @@ class Advanced():
         :returns str: The BLAKE2 hash of the data. If <data> is None, returns ''.
         """
 
-        return blake2b(data).hexdigest() if data is not None else ''
+        return blake2b(data).hexdigest()[:8] if data is not None else ''
 
     def new(self, name: str, author: str = None, compression: str = None, encryption: str = None, encoding: str = "utf-8") -> None:
         """
@@ -250,8 +250,15 @@ class Advanced():
 
         # * Step 5: Check dictionary checksum if strict mode is enabled.
         if strict:
-            if (self.__metadata["checksum"] != self._generateChecksum(dictionary)):
-                raise exceptions.ChecksumError()
+            # Check if `checksum` exists in `self.__metadata`.
+            if "checksum" not in self.__metadata and self.__metadata["version"][0] < 1:
+                # If the configuration file is made by ConfigHandler v0.x.x, generate a new checksum value.
+                self.__metadata["checksum"] = self._generateChecksum(dictionary)
+
+            else:
+                # Evaluate the checksum of the dictionary.
+                if (self.__metadata["checksum"] != self._generateChecksum(dictionary)):
+                    raise exceptions.ChecksumError()
 
         # * Step 6: Convert JSON to dictionary.
         self.__dictionary = json.loads(dictionary.decode(self.__metadata["encoding"]))
@@ -276,7 +283,7 @@ class Advanced():
         dictionary = json.dumps(self.__dictionary).encode(self.__metadata["encoding"])
 
         # * Step 2: Calculate BLAKE2 checksum of the dictionary in JSON format.
-        self.__metadata["checksum"] = self._generateChecksum(dictionary.decode(self.__metadata))
+        self.__metadata["checksum"] = self._generateChecksum(dictionary)
 
         # * Step 3: If encryption is enabled, encrypt the dictionary.
         if self.__metadata["encryption"] is not None:

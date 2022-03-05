@@ -30,5 +30,5 @@ class ChecksumError(Exception):
     Exception raised when the checksum of the dictionary is invalid.
     """
 
-    def __init__(self, message: str = None):
-        self.message = message if message is not None else "The checksum of the dictionary does not match the previous checksum."
+    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
+        super().__init__(message)
