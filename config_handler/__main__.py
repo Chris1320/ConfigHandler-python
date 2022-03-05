@@ -316,22 +316,22 @@ def main():
                         config_name = input("Configuration File Name (Blank for None): ")
                         config_author = input("Configuration File Author (Blank for None): ")
                         config_compression = input("Configuration File Compression (Blank for None): ")
-                        while config_compression not in advanced.Advanced.supported["compression"]:
+                        while config_compression not in advanced.Advanced.SUPPORTED["compression"]:
                             if config_compression == '':
                                 break
 
-                            for available_compression_algorithm in advanced.Advanced.supported["compression"]:
+                            for available_compression_algorithm in advanced.Advanced.SUPPORTED["compression"]:
                                 print("+", available_compression_algorithm)
 
                             print()
                             config_compression = input("Configuration File Compression (Blank for None): ")
 
                         config_encryption = input("Configuration File Encryption (Blank for None): ")
-                        while config_encryption not in advanced.Advanced.supported["encryption"]:
+                        while config_encryption not in advanced.Advanced.SUPPORTED["encryption"]:
                             if config_encryption == '':
                                 break
 
-                            for available_encryption_algorithm in advanced.Advanced.supported["encryption"]:
+                            for available_encryption_algorithm in advanced.Advanced.SUPPORTED["encryption"]:
                                 print("+", available_encryption_algorithm)
 
                             print()
