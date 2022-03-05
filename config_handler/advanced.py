@@ -177,7 +177,7 @@ class Advanced():
         :returns str: The BLAKE2 hash of the data. If <data> is None, returns ''.
         """
 
-        return blake2b(data).hexdigest()[:8] if data is not None else ''
+        return blake2b(data, digest_size=8).hexdigest() if data is not None else ''
 
     def new(self, name: str, author: str = None, compression: str = None, encryption: str = None, encoding: str = "utf-8") -> None:
         """
