@@ -136,7 +136,7 @@ def main():
     print()
     print("Type `help` for help.")
     print()
-    if not advanced.ciphers.aes_support:
+    if not advanced.ciphers.cryptodome_support:
         print("[!] An encryption module is not installed on this system.")
         print("[!] Advanced mode won't be able to encrypt or decrypt.")
         print()

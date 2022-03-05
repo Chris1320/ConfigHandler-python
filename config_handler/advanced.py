@@ -124,7 +124,7 @@ class Advanced():
         """
 
         if self.__metadata["encryption"] == "aes256":
-            if not ciphers.aes_support:
+            if not ciphers.cryptodome_support:
                 raise ValueError("AES256 encryption is not supported in this system.")
 
             return ciphers.AES256(self.epass).encrypt(base64.b64encode(data).decode(self.__metadata["encoding"]))
@@ -142,7 +142,7 @@ class Advanced():
         """
 
         if self.__metadata["encryption"] == "aes256":
-            if not ciphers.aes_support:
+            if not ciphers.cryptodome_support:
                 raise ValueError("AES256 encryption is not supported in this system.")
 
             return base64.b64decode(ciphers.AES256(self.epass).decrypt(data))
