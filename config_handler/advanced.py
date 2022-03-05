@@ -28,6 +28,13 @@ import json
 import zlib
 import base64
 
+try:
+    import lz4.frame
+    lz4_support = True
+
+except ImportError:
+    lz4_support = False
+
 from . import ciphers
 
 
@@ -47,7 +54,7 @@ class Advanced():
         :param bool readonly: True if the configuration file is read-only.
         """
 
-        self.VERSION = (0, 2, 0)  # Parser version
+        self.VERSION = (1, 0, 0)  # Parser version
 
         self.config_path = config_path
         self.epass = epass
@@ -58,7 +65,7 @@ class Advanced():
 
         # All compression and encryption methods must accept and return `bytes` type.
         self.supported = {
-            "compression": ("zlib",),
+            "compression": ("zlib", "lz4"),
             "encryption": ("aes256",),
             "valuetypes": (str, int, float, bool, list, tuple, dict)
         }
@@ -76,6 +83,12 @@ class Advanced():
         if self.__metadata["compression"] == "zlib":
             return zlib.compress(data)
 
+        elif self.__metadata["compression"] == "lz4":
+            if not lz4_support:
+                raise ValueError("LZ4 compression is not supported in this system.")
+
+            return lz4.frame.compress(data)
+
         else:
             raise ValueError(f"Unsupported compression type `{self.__metadata['compression']}`")
 
@@ -91,6 +104,12 @@ class Advanced():
 
         if self.__metadata["compression"] == "zlib":
             return zlib.decompress(data)
+
+        elif self.__metadata["compression"] == "lz4":
+            if not lz4_support:
+                raise ValueError("LZ4 compression is not supported in this system.")
+
+            return lz4.frame.decompress(data)
 
         else:
             raise ValueError(f"Unsupported compression type `{self.__metadata['compression']}`")
@@ -247,20 +266,6 @@ class Advanced():
             fopen.write(json.dumps(self.__metadata, indent=4))
 
         return
-
-    # def verify(self, value) -> bool:
-    #     """
-    #     Check if the type of <value> is valid. Raises a TypeError if its type is not supported.
-
-    #     :param value: The value to check.
-
-    #     :returns bool: True if the type of <value> is valid.
-    #     """
-
-    #     if type(value) not in self.supported["valuetypes"]:
-    #         raise TypeError(f"The type of <value> is not supported.")
-
-    #     return True
 
     def set(self, key, value) -> None:
         """
