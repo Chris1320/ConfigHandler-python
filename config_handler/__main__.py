@@ -141,6 +141,10 @@ def main():
         print("[!] Advanced mode won't be able to encrypt or decrypt.")
         print()
 
+    if not prettytable_support:
+        print("[!] `prettytable` is not installed on this system.")
+        print()
+
     config_file = None
     password = None
     mode = "simple"  # The default mode.
