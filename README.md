@@ -54,20 +54,15 @@ from config_handler.simple import Simple
 
 config = Simple("test.conf")
 
-# Load the data from the file.
-config.load()
+config.load()  # Load the data from the file.
 
 # Get values from the loaded data.
 config.get("foo")  # "foo" is the key.
 
-# Change value of a key.
-config.set("foo", "barred")
+config.set("foo", "barred")  # Change value of a key.
+config.set("new_key", "new_value")  # Add a new key-value pair.
 
-# Add a new key-value pair.
-config.set("new_key", "new_value")
-
-# Encode configuration file to Base64.
-config.isbase64 = True
+config.isbase64 = True  # Encode configuration file to Base64.
 
 # Save changes
 config.save()
@@ -122,15 +117,11 @@ config.load()
 # Get values from the loaded data.
 config.get("foo")  # "foo" is the key.
 
-# Change value of a key.
-config.set("foo", "barred")
-
-# Add a new key-value pair.
-config.set("new_key", "new_value")
+config.set("foo", "barred")  # Change value of a key.
+config.set("new_key", "new_value")  # Add a new key-value pair.
 
 config.metadata()  # Get metadata of the configuration file.
 
-# Save changes
-config.save()
+config.save()  # Save changes
 
 ```
