@@ -12,6 +12,14 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 + via pip: `pip install py-config-handler`
 + as a Git submodule: `git submodule add https://github.com/Chris1320/ConfigHandler-python.git`
 
+### Requirements
+
+The following modules are optional:
+
+- `pycryptodomex`: AES-256 encryption
+- `prettytable`: Prettier layout in interactive mode
+- `lz4`: LZ4 compression support
+
 ## Usage
 
 ### Simple Mode
@@ -22,7 +30,7 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 
 from config_handler.simple import Simple
 
-config = Simple("config.ini")
+config = Simple("test.conf")
 
 # Create a new configuration file by assigning key-value pair.
 config.set("foo", "bar")  # "foo" is the key, "bar" is the value.
@@ -44,7 +52,7 @@ config.save()  # Save the data to the file.
 
 from config_handler.simple import Simple
 
-config = Simple("config.ini")
+config = Simple("test.conf")
 
 # Load the data from the file.
 config.load()
@@ -67,7 +75,7 @@ config.save()
 ```
 
 A key can be any string, but must not start with a `#`, include a `=`, or include a `\n`.
-A value can by any string, integer, or float.
+A value can be any string, integer, or float.
 
 ### Advanced Mode
 
@@ -77,7 +85,7 @@ A value can by any string, integer, or float.
 
 from config_handler.advanced import Advanced
 
-config = Advanced("config.ini", "p4ssw0rd")  # Password is required when encryption is not None.
+config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
 
 config.new(
     name="Advanced Mode Test",
@@ -106,7 +114,7 @@ config.save()  # Save the data to the file.
 
 from config_handler.advanced import Advanced
 
-config = Advanced("config.ini", "p4ssw0rd")  # Password is required when encryption is not None.
+config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
 
 # Load the data from the file.
 config.load()
@@ -120,7 +128,6 @@ config.set("foo", "barred")
 # Add a new key-value pair.
 config.set("new_key", "new_value")
 
-# Encode configuration file to Base64.
 config.metadata()  # Get metadata of the configuration file.
 
 # Save changes
