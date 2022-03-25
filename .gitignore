@@ -6,4 +6,5 @@ build/
 *.egg-info/
 
 # Used as a temporary file when manually testing the package.
-test.conf
+simple_test.conf
+advanced_test.conf
