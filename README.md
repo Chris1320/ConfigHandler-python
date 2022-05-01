@@ -16,9 +16,9 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 
 The following modules are optional:
 
-- `pycryptodomex`: AES-256 encryption
-- `prettytable`: Prettier layout in interactive mode
-- `lz4`: LZ4 compression support
++ `pycryptodomex`: AES-256 encryption
++ `prettytable`: Prettier layout in interactive mode
++ `lz4`: LZ4 compression support
 
 ## Usage
 
