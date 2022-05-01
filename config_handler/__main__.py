@@ -44,23 +44,23 @@ except ImportError:
     prettytable_support = False
 
 
-def promptGenerator(open_configfile: str = None):
+def promptGenerator(open_configfile: str = None) -> str:
     """
     Changes the prompt if a configuration file is open.
 
     :param str open_configfile: The name of the configuration file.
+
+    :returns str: The prompt string.
     """
 
-    if open_configfile is None:
-        return ">>> "
-
-    else:
-        return f"{open_configfile} >>> "
+    return ">>> " if open_configfile is None else f"{open_configfile} >>> "
 
 
-def helpMenu(config_file: str = None):
+def helpMenu(config_file: str = None) -> None:
     """
     Show a help menu.
+
+    :param str config_file: The filename of the configuration file opened.
     """
 
     print()
@@ -73,11 +73,11 @@ def helpMenu(config_file: str = None):
     print("clrpw                  Remove set password.")
     print("readonly               Toogle read-only mode.")
     print("strict                 Toggle strict mode. (Only for `advanced` mode.)")
-    print("mode <mode>            Change the config handler.")
-    print("    simple             Simple mode.")
-    print("    advanced           Advanced mode.")
     print()
     if config_file is None:
+        print("mode <mode>            Change the config handler.")
+        print("    simple             Simple mode.")
+        print("    advanced           Advanced mode.")
         print("open <filename>        Open a configuration file.")
 
     else:
@@ -104,9 +104,13 @@ def helpMenu(config_file: str = None):
     print()
 
 
-def parse(data: str):
+def parse(data: str) -> str:
     """
     Check if <data> needs explicit conversion.
+
+    :param str data: The data to check.
+
+    :returns str|int|float|bool: The parsed data in a new type.
     """
 
     if data.startswith("str:"):
@@ -129,12 +133,14 @@ def parse(data: str):
             raise ValueError("[E] Invalid boolean value.")
 
     else:
-        return data
+        return data  # If nothing matched, do not modify the data.
 
 
-def main():
+def main() -> int:
     """
     Start an interactive console.
+
+    :returns int: The exit code.
     """
 
     print(info.title)
@@ -163,12 +169,11 @@ def main():
     while True:
         try:
             command = str(input(promptGenerator(config_file)))
-
             if command == "help":
                 helpMenu(config_file)
                 continue
 
-            elif command.startswith("status"):
+            elif command == "status":
                 print()
                 print("Current Configuration File: ", config_file)
                 print("Config Mode:                ", mode)
@@ -181,70 +186,35 @@ def main():
                 print()
                 continue
 
-            elif command.startswith("readonly"):
+            elif command == "readonly":
                 readonly = not readonly
-                if readonly:
-                    print("Read-only mode enabled.")
-
-                else:
-                    print("Read-only mode disabled.")
-
+                print("Read-only mode {0}.".format("enabled" if readonly else "disabled"))
                 continue
 
-            elif command.startswith("password"):
+            elif command == "password":
                 password = getpass("Enter password: ")
                 print("[i] Password set.")
 
-            elif command.startswith("clrpw"):
+            elif command == "clrpw":
                 password = None
                 print("[i] Password removed.")
 
-            elif command.startswith("base64"):
+            elif command == "base64":
                 base64 = not base64
-                if base64:
-                    print("Base64 encoding enabled.")
-
-                else:
-                    print("Base64 encoding disabled.")
-
+                print("Base64 encoding {0}.".format("enabled" if base64 else "disabled"))
                 continue
 
             elif command.startswith("encoding"):
                 if command.partition(' ')[2] != '':
                     encoding = command.partition(' ')[2]
                     print(f"Encoding set to `{encoding}`.")
+                    continue
 
-                else:
-                    helpMenu(config_file)
+                helpMenu(config_file)  # Show help menu if no encoding is given.
 
-                continue
-
-            elif command.startswith("strict"):
+            elif command == "strict":
                 strict = not strict
-                if strict:
-                    print("Strict mode enabled.")
-
-                else:
-                    print("Strict mode disabled.")
-
-                continue
-
-            elif command.startswith("mode"):
-                command_option = command.partition(' ')[2]
-                if command_option == '':
-                    print(f"[i] You are currently using `{mode}` mode.")
-
-                elif command_option == "simple":
-                    mode = "simple"
-                    print("mode is set to `simple`.")
-
-                elif command_option == "advanced":
-                    mode = "advanced"
-                    print("mode is set to `advanced`.")
-
-                else:
-                    print(f"[E] Unknown mode `{command_option}`.")
-
+                print("Strict mode {0}.".format("enabled" if strict else "disabled"))
                 continue
 
             elif command == "exit":
@@ -282,18 +252,36 @@ def main():
                         print("[E] You must set a password before opening the configuration file.")
                         config_file = None
 
+                elif command.startswith("mode"):
+                    command_option = command.partition(' ')[2]
+                    if command_option == '':
+                        print(f"[i] You are currently using `{mode}` mode.")
+
+                    elif command_option == "simple":
+                        mode = "simple"
+                        print("mode is set to `simple`.")
+
+                    elif command_option == "advanced":
+                        mode = "advanced"
+                        print("mode is set to `advanced`.")
+
+                    else:
+                        print(f"[E] Unknown mode `{command_option}`.")
+
+                    continue
+
                 else:
                     print(f"[E] Unknown command `{command}`.")
                     continue
 
             else:
-                if command.startswith("close"):
+                if command == "close":
                     config_file = None
                     config = None
                     print("[i] Configuration file closed.")
                     continue
 
-                elif command.startswith("load"):
+                elif command == "load":
                     try:
                         config.load(strict)
 
@@ -306,14 +294,14 @@ def main():
                         print("[i] Configuration file loaded.")
                         continue
 
-                elif command.startswith("keys"):
+                elif command == "keys":
                     print("Available keys:")
                     for k in config.keys():
                         print("+", k)
 
                     continue
 
-                elif command.startswith("list"):
+                elif command == "list":
                     if prettytable_support:
                         table = prettytable.PrettyTable()
                         table.field_names = ["Key", "Value", "Type"]
@@ -329,15 +317,19 @@ def main():
 
                         print()
 
-                elif command.startswith("new"):
+                elif command == "new":
                     if mode != "advanced":
                         print("[E] You can only call `new` in advanced mode.")
                         continue
 
                     else:
-                        config_name = input("Configuration File Name (Blank for None): ")
-                        config_author = input("Configuration File Author (Blank for None): ")
-                        config_compression = input("Configuration File Compression (Blank for None): ")
+                        if password is None:
+                            print("[i] You must set a password before creating an encrypted configuration file.")
+                            print()
+
+                        config_name: str = input("Configuration File Name (Blank for None): ")
+                        config_author: str = input("Configuration File Author (Blank for None): ")
+                        config_compression: str = input("Configuration File Compression (Blank for None): ")
                         while config_compression not in advanced.Advanced.SUPPORTED["compression"]:
                             if config_compression == '':
                                 break
@@ -346,30 +338,27 @@ def main():
                                 print("+", available_compression_algorithm)
 
                             print()
-                            config_compression = input("Configuration File Compression (Blank for None): ")
+                            config_compression: str = input("Configuration File Compression (Blank for None): ")
 
-                        config_encryption = input("Configuration File Encryption (Blank for None): ")
-                        while config_encryption not in advanced.Advanced.SUPPORTED["encryption"]:
-                            if config_encryption == '':
-                                break
+                        if password is not None:
+                            config_encryption: str = input("Configuration File Encryption (Blank for None): ")
+                            while config_encryption not in advanced.Advanced.SUPPORTED["encryption"]:
+                                if config_encryption == '':
+                                    break
 
-                            for available_encryption_algorithm in advanced.Advanced.SUPPORTED["encryption"]:
-                                print("+", available_encryption_algorithm)
+                                for available_encryption_algorithm in advanced.Advanced.SUPPORTED["encryption"]:
+                                    print("+", available_encryption_algorithm)
 
-                            print()
-                            config_encryption = input("Configuration File Encryption (Blank for None): ")
+                                print()
+                                config_encryption: str = input("Configuration File Encryption (Blank for None): ")
 
-                        if config_name == '':
-                            config_name = None
+                        else:
+                            config_encryption = ''  # Set to blank if no password is set.
 
-                        if config_author == '':
-                            config_author = None
-
-                        if config_compression == '':
-                            config_compression = None
-
-                        if config_encryption == '':
-                            config_encryption = None
+                        config_name = None if config_name == '' else config_name
+                        config_author = None if config_author == '' else config_author
+                        config_compression = None if config_compression == '' else config_compression
+                        config_encryption = None if config_encryption == '' else config_encryption
 
                         print("Creating configuration file...")
                         try:
