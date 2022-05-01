@@ -30,44 +30,44 @@ import base64
 import config_handler
 
 
-class TestClass():
+class TestClass:
     simple_configpath = "./simple_test.conf"
     advanced_configpath = "./advanced_test.conf"
 
     def test_simple_new(self):
         config = config_handler.simple.Simple(TestClass.simple_configpath)
-
-        config.set("foo", "bar")
-        config.set("nums", 123)
-        config.set("dec", 3.14)
-        config.set("Aboolean", True)
-        config.set("unintentional variable!", "unintentional value.")
+        key_value_pairs = {
+            "foo": "bar",
+            "nums": 123,
+            "dec": 3.14,
+            "Aboolean": True,
+            "unintentional variable!": "unintentional value."
+        }
+        for key, value in key_value_pairs.items():
+            config.set(key, value)
 
         config.remove("unintentional variable!")
-
         config.save()
-
-        with open(TestClass.simple_configpath, "r") as f:
+        with open(TestClass.simple_configpath, 'r') as f:
             assert f.read() == "foo=bar\nnums=123\ndec=3.14\nAboolean=True\n"
 
-        assert list(config.keys()) == ["foo", "nums", "dec", "Aboolean"]
+        for key in config.keys():
+            assert config.get(key) == key_value_pairs[key]
 
     def test_simple_load(self):
         if not os.path.exists(TestClass.simple_configpath):
+            # Create test file if it does not exist.
             with open(TestClass.simple_configpath, "w") as f:
                 f.write("foo=bar\nnums=123\ndec=3.14\nAboolean=True\n")
 
         config = config_handler.simple.Simple(TestClass.simple_configpath)
-
         config.load()
-
         assert config.get("foo") == "bar"
-
         try:
             config.get("new_key")
 
         except KeyError:
-            pass
+            pass  # Test passed
 
         else:
             raise AssertionError("KeyError not raised.")
@@ -79,7 +79,6 @@ class TestClass():
         assert config.get("new_key") == "new_value"
 
         config.isbase64 = True
-
         config.save()
 
         with open(TestClass.simple_configpath, "r") as f:
@@ -96,7 +95,6 @@ class TestClass():
 
     def test_advanced_new(self):
         config = config_handler.advanced.Advanced(TestClass.advanced_configpath, "p4ssw0rd")
-
         config.new(
             name="Advanced Mode Test",
             author="Chris1320",
@@ -105,21 +103,21 @@ class TestClass():
         )
 
         # Create a new configuration file by assigning key-value pair.
-        config.set("foo", "bar")  # "foo" is the key, "bar" is the value.
-        config.set("nums", 123)
-        config.set("dec", 3.14)
-        config.set("Aboolean", True)
-        config.set("unintentional variable!", "unintentional value.")
+        key_value_pairs = {
+            "foo": "bar",  # "foo" is the key, "bar" is the value.
+            "nums": 123,
+            "dec": 3.14,
+            "Aboolean": True,
+            "unintentional variable!": "unintentional value."
+        }
+        for key, value in key_value_pairs.items():
+            config.set(key, value)
 
         # Remove values
         config.remove("unintentional variable!")
-
         config.save()  # Save the data to the file.
-
-        config_keys = {}
-        for key in config.keys():
-            config_keys[key] = config.get(key)
-
+        config_keys = key_value_pairs.copy()
+        config_keys.pop("unintentional variable!")
         config_checksum = config._generateChecksum(json.dumps(config_keys).encode("utf-8"))
 
         assert config.epass == "p4ssw0rd"
@@ -147,23 +145,16 @@ class TestClass():
             )
 
         config.load()
-
         config.get("foo")
-
         config.set("foo", "barred")
         config.set("new_key", "new_value")
-
         config.metadata()
-
-        # Save changes
-        config.save()
-
+        config.save()  # Save changes
         config_keys = {}
         for key in config.keys():
             config_keys[key] = config.get(key)
 
         config_checksum = config._generateChecksum(json.dumps(config_keys).encode("utf-8"))
-
         assert config.metadata() == {
             "name": "Advanced Mode Test",
             "author": "Chris1320",
