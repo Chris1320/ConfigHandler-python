@@ -9,7 +9,7 @@ print(info.title)
 print()
 
 setup(
-    name="py-config-handler",
+    name="confighandler-python",
     version='.'.join(map(str, info.version)),  # Get the program version from the package.
     description="Create, update, and remove values from a configuration file made by ConfigHandler.",
     long_description=README,
@@ -35,5 +35,5 @@ setup(
         "console_scripts": [
             "config_handler=config_handler.__main__:main",
         ]
-    },
+    }
 )
