@@ -25,17 +25,71 @@ SOFTWARE.
 """
 
 import base64
+from typing import Final
+from pathlib import Path
 
 
-class Simple():
+class Simple:
+    r"""
+    A class that creates and manipulates a "simple" configuration file.
+
+    - Comments are supported by appending a hash (#) at the beginning of the line.
+    - Each line of the file contains one key-value pair separated by an equal (=) sign.
+    - Keys must follow the constraints below:
+        - Keys must be a string. If not, it will be converted into a string if possible.
+        - Keys must not contain an equal (=) sign.
+        - Keys must not contain a newline (\n).
+        - Keys must not start with a hash (#).
+    - Values can be any string, integer, float, or boolean.
     """
-    A class the creates and manipulates a "simple" configuration file.
 
-    + This mode is for storing string, integer, and decimals only.
-    + Comments are supported by appending `#` at the beginning of the line.
-    + Each line of the file contains one key-value pair separated by an equal (=) sign.
-    """
+    parser_version: Final[tuple[int, int, int]] = (0, 2, 1)  # Parser version
 
+    def __init__(
+        self,
+        config_path: str,
+        isbase64: bool = False,
+        readonly: bool = False,
+        encoding: str = "utf-8"
+    ):
+        """
+        :param config_path: The path of the configuration file to open or create.
+        :param isbase64: True if the configuration file is encoded via Base64.
+        :param readonly: True if the configuration file is read-only.
+        :param encoding: The encoding to use.
+        """
+
+        self.config_path = config_path
+        self.isbase64 = isbase64
+        self.readonly = readonly
+        self.encoding = encoding
+        self.__data = {}  # The configuration file contents.
+
+    @property
+    def exists(self) -> bool:
+        """
+        Check if the configuration file exists.
+        """
+
+        return Path(self.config_path).is_file()
+
+
+    def load(self) -> None:
+        """
+        Load the configuration file to memory.
+        """
+
+        # TODO
+
+    def save(self) -> None:
+        """
+        Save the configuration file to file.
+        """
+
+        # TODO
+
+
+class _Simple:
     def __init__(self, config_path: str, isbase64: bool = False, encoding: str = "utf-8", readonly: bool = False):
         """
         The initialization method for Simple() class.
@@ -45,8 +99,6 @@ class Simple():
         :param str encoding: The encoding to be used.
         :param bool readonly: True if the configuration file is read-only.
         """
-
-        self.VERSION = (0, 2, 0)  # Parser version
 
         self.isbase64 = isbase64
         self.encoding = encoding
