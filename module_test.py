@@ -27,7 +27,8 @@ SOFTWARE.
 import os
 import json
 import base64
-import config_handler
+from config_handler.simple import Simple
+from config_handler.advanced import Advanced
 
 
 class TestClass:
@@ -35,7 +36,7 @@ class TestClass:
     advanced_configpath = "./advanced_test.conf"
 
     def test_simple_new(self):
-        config = config_handler.simple.Simple(TestClass.simple_configpath)
+        config = Simple(TestClass.simple_configpath)
         key_value_pairs = {
             "foo": "bar",
             "nums": 123,
@@ -60,7 +61,7 @@ class TestClass:
             with open(TestClass.simple_configpath, "w") as f:
                 f.write("foo=bar\nnums=123\ndec=3.14\nAboolean=True\n")
 
-        config = config_handler.simple.Simple(TestClass.simple_configpath)
+        config = Simple(TestClass.simple_configpath)
         config.load()
         assert config.get("foo") == "bar"
         try:
@@ -88,13 +89,13 @@ class TestClass:
         with open(TestClass.simple_configpath, "w") as f:
             f.write("Zm9vPWJhcnJlZApudW1zPTEyMwpkZWM9My4xNApBYm9vbGVhbj1UcnVlCm5ld19rZXk9bmV3X3ZhbHVlCg==")
 
-        config = config_handler.simple.Simple(TestClass.simple_configpath, True)
+        config = Simple(TestClass.simple_configpath, True)
         config.load()
 
         assert list(config.keys()) == ["foo", "nums", "dec", "Aboolean", "new_key"]
 
     def test_advanced_new(self):
-        config = config_handler.advanced.Advanced(TestClass.advanced_configpath, "p4ssw0rd")
+        config = Advanced(TestClass.advanced_configpath, "p4ssw0rd")
         config.new(
             name="Advanced Mode Test",
             author="Chris1320",
@@ -129,13 +130,13 @@ class TestClass:
             "compression": "zlib",
             "encryption": "aes256",
             "encoding": "utf-8",
-            "version": config_handler.advanced.Advanced.VERSION,
+            "version": Advanced.VERSION,
             "checksum": config_checksum,
             "dictionary_size": 4
         }
 
     def test_advanced_load(self):
-        config = config_handler.advanced.Advanced(TestClass.advanced_configpath, "p4ssw0rd")
+        config = Advanced(TestClass.advanced_configpath, "p4ssw0rd")
         if not os.path.exists(TestClass.advanced_configpath):
             config.new(
                 name="Advanced Mode Test",
@@ -161,7 +162,7 @@ class TestClass:
             "compression": "zlib",
             "encryption": "aes256",
             "encoding": "utf-8",
-            "version": config_handler.advanced.Advanced.VERSION,
+            "version": Advanced.VERSION,
             "checksum": config_checksum,
             "dictionary_size": len(config_keys)
         }
