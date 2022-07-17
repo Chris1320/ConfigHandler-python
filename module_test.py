@@ -27,16 +27,18 @@ SOFTWARE.
 import os
 import json
 import base64
+from typing import Final
+
 from config_handler.simple import Simple
 from config_handler.advanced import Advanced
 
 
 class TestClass:
-    simple_configpath = "./simple_test.conf"
-    advanced_configpath = "./advanced_test.conf"
+    simple_configpath: Final[str] = os.path.abspath("./simple_test.conf")
+    advanced_configpath: Final[str] = os.path.abspath("./advanced_test.conf")
 
     def test_simple_new(self):
-        config = Simple(TestClass.simple_configpath)
+        config = Simple(self.simple_configpath)
         key_value_pairs = {
             "foo": "bar",
             "nums": 123,
@@ -45,27 +47,27 @@ class TestClass:
             "unintentional variable!": "unintentional value."
         }
         for key, value in key_value_pairs.items():
-            config.set(key, value)
+            config[key] = value
 
-        config.remove("unintentional variable!")
+        del config["unintentional variable!"]
         config.save()
-        with open(TestClass.simple_configpath, 'r') as f:
+        with open(self.simple_configpath, 'r') as f:
             assert f.read() == "foo=bar\nnums=123\ndec=3.14\nAboolean=True\n"
 
         for key in config.keys():
-            assert config.get(key) == key_value_pairs[key]
+            assert config[key] == key_value_pairs[key]
 
     def test_simple_load(self):
-        if not os.path.exists(TestClass.simple_configpath):
+        if not os.path.exists(self.simple_configpath):
             # Create test file if it does not exist.
-            with open(TestClass.simple_configpath, "w") as f:
+            with open(self.simple_configpath, "w") as f:
                 f.write("foo=bar\nnums=123\ndec=3.14\nAboolean=True\n")
 
-        config = Simple(TestClass.simple_configpath)
+        config = Simple(self.simple_configpath)
         config.load()
-        assert config.get("foo") == "bar"
+        assert config["foo"] == "bar"
         try:
-            config.get("new_key")
+            config["new_key"]
 
         except KeyError:
             pass  # Test passed
@@ -73,26 +75,26 @@ class TestClass:
         else:
             raise AssertionError("KeyError not raised.")
 
-        config.set("foo", "barred")
-        config.set("new_key", "new_value")
+        config["foo"] = "barred"
+        config["new_key"] = "new_value"
 
-        assert config.get("foo") == "barred"
-        assert config.get("new_key") == "new_value"
+        assert config["foo"] == "barred"
+        assert config["new_key"] == "new_value"
 
         config.isbase64 = True
         config.save()
 
-        with open(TestClass.simple_configpath, "r") as f:
+        with open(self.simple_configpath, "r") as f:
             assert base64.b64decode(f.read().encode("utf-8")).decode() == "foo=barred\nnums=123\ndec=3.14\nAboolean=True\nnew_key=new_value\n"
 
     def test_simple_load_base64(self):
-        with open(TestClass.simple_configpath, "w") as f:
+        with open(self.simple_configpath, "w") as f:
             f.write("Zm9vPWJhcnJlZApudW1zPTEyMwpkZWM9My4xNApBYm9vbGVhbj1UcnVlCm5ld19rZXk9bmV3X3ZhbHVlCg==")
 
-        config = Simple(TestClass.simple_configpath, True)
+        config = Simple(self.simple_configpath, isbase64=True)
         config.load()
 
-        assert list(config.keys()) == ["foo", "nums", "dec", "Aboolean", "new_key"]
+        assert config.keys() == ["foo", "nums", "dec", "Aboolean", "new_key"]
 
     def test_advanced_new(self):
         config = Advanced(TestClass.advanced_configpath, "p4ssw0rd")

@@ -203,7 +203,7 @@ class Simple:
         if self.readonly:
             raise PermissionError("The configuration file is read-only.")
 
-        result = ""  # The string to be written to file.
+        config_data = ""  # The string to be written to file.
         for key in self.__data:
             config_data += f"{key}={self.__data[key]}\n"  # Write the key-value pair to the config file.
 
@@ -211,3 +211,10 @@ class Simple:
         with open(self.config_path, "wb" if self.isbase64 else 'w') as f:
             # Encode to Base64 if self.base64 is True.
             f.write(base64.b64encode(config_data.encode(self.encoding)) if self.isbase64 else config_data)
+
+    def keys(self) -> list[str]:
+        """
+        Return existing keys in the configuration file.
+        """
+
+        return list(self.__data.keys())
