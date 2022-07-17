@@ -24,13 +24,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import os
 import base64
 from typing import Any
 from typing import Final
-from pathlib import Path
 
 
-class Simple(dict):
+class Simple:
     r"""
     A class that creates and manipulates a "simple" configuration file.
 
@@ -44,7 +44,7 @@ class Simple(dict):
     - Values can be any string, integer, float, or boolean.
     """
 
-    parser_version: Final[tuple[int, int, int]] = (0, 2, 1)  # Parser version
+    parser_version: Final[tuple[int, int, int]] = (0, 3, 0)  # Parser version
     _separator: Final[str] = '='
     _comment_char: Final[str] = '#'
     _forbidden_key_chars: Final[tuple[str, ...]] = (
@@ -73,6 +73,20 @@ class Simple(dict):
         self.encoding = encoding
 
         self.__data = {}  # The configuration file contents.
+
+    def __contains__(self, key: str) -> bool:
+        """
+        Check if self.__data has a <key> key.
+        """
+
+        return key in self.__data
+
+    def __delitem__(self, key: str) -> None:
+        """
+        Remove a key.
+        """
+
+        del self.__data[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
         """
@@ -112,12 +126,20 @@ class Simple(dict):
         return len(self.__data)
 
     @property
+    def config_path(self) -> str:
+        return self._config_path
+
+    @config_path.setter
+    def config_path(self, new_path: str):
+        self._config_path = os.path.abspath(new_path)
+
+    @property
     def exists(self) -> bool:
         """
         Check if the configuration file exists.
         """
 
-        return Path(self.config_path).is_file()
+        return os.path.isfile(self.config_path)
 
     def _parseKey(self, key: str) -> bool:
         """
