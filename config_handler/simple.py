@@ -24,148 +24,197 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import os
 import base64
+from typing import Any
+from typing import Final
 
 
-class Simple():
+class Simple:
+    r"""
+    A class that creates and manipulates a "simple" configuration file.
+
+    - Comments are supported by appending a hash (#) at the beginning of the line.
+    - Each line of the file contains one key-value pair separated by an equal (=) sign.
+    - Keys must follow the constraints below:
+        - Keys must be a string. If not, it will be converted into a string if possible.
+        - Keys must not contain an equal (=) sign.
+        - Keys must not contain a newline (\n).
+        - Keys must not start with a hash (#).
+    - Values can be any string, integer, float, or boolean.
     """
-    A class the creates and manipulates a "simple" configuration file.
 
-    + This mode is for storing string, integer, and decimals only.
-    + Comments are supported by appending `#` at the beginning of the line.
-    + Each line of the file contains one key-value pair separated by an equal (=) sign.
-    """
+    parser_version: Final[tuple[int, int, int]] = (0, 3, 0)  # Parser version
+    _separator: Final[str] = '='
+    _comment_char: Final[str] = '#'
+    _forbidden_key_chars: Final[tuple[str, ...]] = (
+        _separator,
+        _comment_char,
+        '\n'
+    )
 
-    def __init__(self, config_path: str, isbase64: bool = False, encoding: str = "utf-8", readonly: bool = False):
+    def __init__(
+        self,
+        config_path: str,
+        isbase64: bool = False,
+        readonly: bool = False,
+        encoding: str = "utf-8"
+    ):
         """
-        The initialization method for Simple() class.
-
-        :param str config_path: The path of the configuration file to use.
-        :param bool isbase64: True if the configuration file is encoded via Base64.
-        :param str encoding: The encoding to be used.
-        :param bool readonly: True if the configuration file is read-only.
+        :param config_path: The path of the configuration file to open or create.
+        :param isbase64: True if the configuration file is encoded via Base64.
+        :param readonly: True if the configuration file is read-only.
+        :param encoding: The encoding to use.
         """
 
-        self.VERSION = (0, 2, 0)  # Parser version
-
+        self.config_path = config_path
         self.isbase64 = isbase64
+        self.readonly = readonly
         self.encoding = encoding
 
-        self._config_path = config_path
-        self.__readonly = readonly
-        self.__data = {}  # We will put the contents of the configuration file here.
+        self.__data = {}  # The configuration file contents.
 
-    def _parseKey(self, key: str) -> None:
+    def __contains__(self, key: str) -> bool:
         """
-        Check if the key is valid. Raises a ValueError if the key is invalid.
-
-        :param str key: The key to check.
+        Check if self.__data has a <key> key.
         """
 
-        if type(key) is not str:  # Separate this check from other checks to avoid TypeError when key is not a str.
-            raise ValueError(f"Invalid key `{key}`")
+        return key in self.__data
 
-        if '=' in key or key.startswith('#') or '\n' in key:
-            raise ValueError(f"Invalid key `{key}`")
+    def __delitem__(self, key: str) -> None:
+        """
+        Remove a key.
+        """
 
-        return
+        del self.__data[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        """
+        Set a key-value pair in the configuration file.
+
+        :param key: The key of the pair.
+        :param value: The value of the key.
+        """
+
+        if self.readonly:
+            raise PermissionError("The configuration file is read-only.")
+
+        if not self._parseKey(key):
+            raise ValueError("Key contains invalid characters.")
+
+        self.__data[key] = value
+
+    def __getitem__(self, key: str) -> Any:
+        """
+        Get the value of <key>.
+        """
+
+        return self.__data[key]
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the configuration file.
+        """
+
+        return f"<Simple config file at {self.config_path}>"
+
+    def __len__(self) -> int:
+        """
+        Return the number of pairs present in the configuration file.
+        """
+
+        return len(self.__data)
+
+    @property
+    def config_path(self) -> str:
+        return self._config_path
+
+    @config_path.setter
+    def config_path(self, new_path: str):
+        self._config_path = os.path.abspath(new_path)
+
+    @property
+    def exists(self) -> bool:
+        """
+        Check if the configuration file exists.
+        """
+
+        return os.path.isfile(self.config_path)
+
+    def _parseKey(self, key: str) -> bool:
+        """
+        Check if the key is valid.
+        """
+
+        if type(key) is not str:
+            return False
+
+        elif any(char in key for char in self._forbidden_key_chars):
+            return False
+
+        else:
+            return True
 
     def load(self) -> None:
         """
-        Read the config file and store it to self.__data as a dictionary.
+        Load the configuration file contents to memory.
         Call this method when you want to read the configuration file.
-        If you save without calling load(), the configuration file will be overwritten.
-
-        :returns void:
+        If `self.save()` is called without calling this method, the configuration file
+        will be overwritten.
         """
 
-        with open(self._config_path, 'r') as fopen:
-            if self.isbase64:  # Decode data if it is Base64 encoded.
-                config_data = base64.b64decode(fopen.read()).decode(self.encoding)
+        # Open in `rb` mode if self.isbase64 is True.
+        with open(self.config_path, "rb" if self.isbase64 else 'r') as f:
+            # Decode from Base64 if self.base64 is True.
+            config_data = base64.b64decode(f.read()).decode(self.encoding) if self.isbase64 else f.read()
 
-            else:
-                config_data = fopen.read()
-
+        # Parse the configuration file contents
         for line in config_data.splitlines():
-            if line.startswith('#'):
+            if line.startswith(self._comment_char):
                 continue  # Skip comments.
 
-            data = line.partition('=')  # * data[0] is the key, data[1] is the separator, data[2] is the value.
+            data = line.partition(self._separator)
 
-            # Write the key-value pair to `self.__data`.
-            if data[2].partition('.')[0].isdigit() and data[2].partition('.')[2].isdigit():
-                self.__data[data[0]] = float(data[2])
-
-            elif data[2].isdigit():
+            if data[2].isdigit():  # Check if the value is an int.
                 self.__data[data[0]] = int(data[2])
 
-            elif data[2].lower() in ("true", "false"):
+            elif data[2].lower() in ("true", "false"):  # Check if the value is a bool.
                 if data[2].lower() == "true":
                     self.__data[data[0]] = True
 
-                else:
+                elif data[2].lower() == "false":
                     self.__data[data[0]] = False
 
-            else:
-                self.__data[data[0]] = str(data[2])
+                else:
+                    raise ValueError("Key value has unknown boolean state.")
+
+            elif data[2].partition('.')[0].isdigit() and data[2].partition('.')[2].isdigit():  # Check if the value is a float.
+                self.__data[data[0]] = float(data[2])
+
+            else:  # If none of the above is true, the value is a string.
+                self.__data[data[0]] = data[2]
 
     def save(self) -> None:
         """
-        Save the config file. Raises a PermissionError if the configuration file is read-only.
-
-        :returns void:
+        Save the configuration file to <self.config_path>.
+        This method raises a `PermissionError` if the configuration file is read-only.
         """
 
-        if self.__readonly:
+        if self.readonly:
             raise PermissionError("The configuration file is read-only.")
 
-        config_data = ""  # Let's initialize it as an empty string first.
+        config_data = ""  # The string to be written to file.
         for key in self.__data:
             config_data += f"{key}={self.__data[key]}\n"  # Write the key-value pair to the config file.
 
-        with open(self._config_path, 'w') as fopen:
-            if self.isbase64:
-                fopen.write(base64.b64encode(config_data.encode(self.encoding)).decode(self.encoding))
+        # Open in `wb` mode if self.isbase64 is True.
+        with open(self.config_path, "wb" if self.isbase64 else 'w') as f:
+            # Encode to Base64 if self.base64 is True.
+            f.write(base64.b64encode(config_data.encode(self.encoding)) if self.isbase64 else config_data)
 
-            else:
-                fopen.write(config_data)
-
-        return
-
-    def get(self, key: str) -> str:
+    def keys(self) -> list[str]:
         """
-        Get the value of <key> from `self.__data`.
+        Return existing keys in the configuration file.
         """
 
-        return self.__data[key]  # Will raise a KeyError exception if the key is not found.
-
-    def set(self, key: str, value) -> None:
-        """
-        Add or update a new key-value pair to `self.__data`.
-
-        :param str key: The key to add.
-        :param value: The value to add.
-        """
-
-        self._parseKey(key)  # Check if the key is valid.
-        self.__data[key] = value
-        return
-
-    def remove(self, key: str) -> None:
-        """
-        Remove a key-value pair from `self.__data`.
-
-        :param str key: The key to remove.
-        """
-
-        self.__data.pop(key)
-        return
-
-    def keys(self) -> list:
-        """
-        Get all the keys in `self.__data`.
-
-        :returns list: The list of keys.
-        """
-
-        return self.__data.keys()
+        return list(self.__data.keys())

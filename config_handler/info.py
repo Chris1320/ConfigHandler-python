@@ -24,13 +24,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-name = "ConfigHandler"
-version = (1, 0, 2)
-release = "beta"  # `stable`, `beta`, `dev`
-full_ver = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
+from typing import Final
 
-if release == "stable":
-    title = f"{name} v{'.'.join(map(str, version))}"
 
-else:
-    title = f"{name} v{'.'.join(map(str, version))}-{release}"
+name: Final[str] = "ConfigHandler"
+version: Final[tuple[int, int, int]] = (1, 0, 2)
+release: Final[str] = "dev"  # `stable`, `beta`, `dev`
+full_ver: Final[str] = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
+title: Final[str] = "{name} v{version}{release_suffix}".format(
+    name = name,
+    version = '.'.join(map(str, version)),
+    release_suffix = "" if release == "stable" else f"-{release}"
+)
