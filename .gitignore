@@ -5,6 +5,6 @@ dist/
 build/
 *.egg-info/
 
-# Used as a temporary file when manually testing the package.
-simple_test.conf
-advanced_test.conf
+# Used as temporary files when testing the package.
+tests/simple/*.conf
+tests/advanced/*.conf

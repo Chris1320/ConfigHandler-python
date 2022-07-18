@@ -25,146 +25,337 @@ SOFTWARE.
 """
 
 import os
-import json
-import base64
+import time
+from typing import Any
 from typing import Final
 
 from config_handler.simple import Simple
-from config_handler.advanced import Advanced
+# from config_handler.advanced import Advanced
 
 
-class TestClass:
-    simple_configpath: Final[str] = os.path.abspath("./simple_test.conf")
-    advanced_configpath: Final[str] = os.path.abspath("./advanced_test.conf")
+class TestSimpleConfigHandler:
+    _tests_folder: Final[str] = os.path.join(os.getcwd(), "tests", "simple")
+    simple_configpath: Final[str] = os.path.join(_tests_folder, "test.conf")
+    simple_base64_configpath: Final[str] = os.path.join(_tests_folder, "base64_test.conf")
 
-    def test_simple_new(self):
+    bulk_ops_range: Final[int] = 10000
+
+    key_value_pairs: Final[dict[str, Any]] = {
+        "foo": "bar",
+        "nums": 123,
+        "dec": 3.14,
+        "Aboolean": True,
+        "unintentional variable!": "unintentional value."
+    }
+    forbidden_chars_in_key: Final[dict[Any, Any]] = {
+        "=": "equal sign",
+        "#": "hash",
+        "\n": "newline",
+        "c=a+b": "equation is the key",
+        "#something": "comment",
+        "foo\nbar": "newline in key",
+        123: "number",
+        3.14: "pi",
+        False: "boolean"
+    }
+    forbidden_chars_in_value: Final[dict[str, Any]] = {
+        "foo": ("b", "a", "r"),
+        "newline": "something\nhere"
+    }
+    if not os.path.exists(_tests_folder):
+        os.makedirs(_tests_folder)
+
+    # Remove configuration files if they exist.
+    if os.path.exists(simple_configpath):
+        os.remove(simple_configpath)
+
+    if os.path.exists(simple_base64_configpath):
+        os.remove(simple_base64_configpath)
+
+    def testNewConfig(self):
+        """
+        Create a new configuration file.
+        """
+
         config = Simple(self.simple_configpath)
-        key_value_pairs = {
-            "foo": "bar",
-            "nums": 123,
-            "dec": 3.14,
-            "Aboolean": True,
-            "unintentional variable!": "unintentional value."
-        }
-        for key, value in key_value_pairs.items():
+
+        # Set the key-value pairs.
+        for key, value in self.key_value_pairs.items():
             config[key] = value
 
+        assert len(config) == len(self.key_value_pairs)
+
+        # Remove a key-value pair.
         del config["unintentional variable!"]
-        config.save()
+
+        config.save()  # Save the configuration file.
+
+        # Check if the contents of the configuration file are in the expected format.
         with open(self.simple_configpath, 'r') as f:
             assert f.read() == "foo=bar\nnums=123\ndec=3.14\nAboolean=True\n"
 
-        for key in config.keys():
-            assert config[key] == key_value_pairs[key]
+    def testLoadConfig(self):
+        """
+        Load a configuration file.
+        """
 
-    def test_simple_load(self):
         if not os.path.exists(self.simple_configpath):
             # Create test file if it does not exist.
             with open(self.simple_configpath, "w") as f:
                 f.write("foo=bar\nnums=123\ndec=3.14\nAboolean=True\n")
 
         config = Simple(self.simple_configpath)
-        config.load()
+        config.load()  # Load the configuration file.
+
         assert config["foo"] == "bar"
         try:
-            config["new_key"]
+            config["unintentional variable!"]
 
         except KeyError:
-            pass  # Test passed
+            pass  # This is expected.
 
         else:
-            raise AssertionError("KeyError not raised.")
+            assert False  # KeyError should've been raised.
 
-        config["foo"] = "barred"
-        config["new_key"] = "new_value"
+        config["foo"] = "barred"  # Change value of existing key.
+        config["new key"] = "new value"  # Add new key-value pair.
 
         assert config["foo"] == "barred"
-        assert config["new_key"] == "new_value"
+        assert config["new key"] == "new value"
 
+        config.save()  # Save the configuration file.
+
+        # Check if the contents of the configuration file are in the expected format.
+        with open(self.simple_configpath, "r") as f:
+            assert f.read() == "foo=barred\nnums=123\ndec=3.14\nAboolean=True\nnew key=new value\n"
+
+    def testNewBase64Config(self):
+        """
+        Create a new configuration file with base64 encoding.
+        """
+
+        config = Simple(self.simple_base64_configpath, isbase64=True)
+
+        # Set the key-value pairs.
+        for key, value in self.key_value_pairs.items():
+            config[key] = value
+
+        assert len(config) == len(self.key_value_pairs)
+
+        # Remove a key-value pair.
+        del config["unintentional variable!"]
+
+        config.save()  # Save the configuration file.
+
+        # Check if the contents of the configuration file are in the expected format.
+        with open(self.simple_base64_configpath, 'rb') as f:
+            assert f.read() == b"Zm9vPWJhcgpudW1zPTEyMwpkZWM9My4xNApBYm9vbGVhbj1UcnVlCg=="
+
+    def testLoadBase64Config(self):
+        """
+        Load a configuration file with base64 encoding.
+        """
+
+        if not os.path.exists(self.simple_base64_configpath):
+            # Create test file if it does not exist.
+            with open(self.simple_base64_configpath, "wb") as f:
+                f.write(b"Zm9vPWJhcgpudW1zPTEyMwpkZWM9My4xNApBYm9vbGVhbj1UcnVlCg==")
+
+        config = Simple(self.simple_base64_configpath, isbase64=True)
+        config.load()
+
+        assert config["foo"] == "bar"
+        try:
+            config["unintentional variable!"]
+
+        except KeyError:
+            pass  # This is expected.
+
+        else:
+            assert False  # KeyError should've been raised.
+
+        config["foo"] = "barred"  # Change value of existing key.
+        config["new key"] = "new value"  # Add new key-value pair.
+
+        config.save()
+
+        # Check if the contents of the configuration file are in the expected format.
+        with open(self.simple_base64_configpath, "rb") as f:
+            assert f.read() == b"Zm9vPWJhcnJlZApudW1zPTEyMwpkZWM9My4xNApBYm9vbGVhbj1UcnVlCm5ldyBrZXk9bmV3IHZhbHVlCg=="
+
+    def testDunderMethods(self):
+        """
+        Test dunder methods of the simple ConfigHandler object.
+        """
+
+        with open(self.simple_configpath, 'w') as f:
+            f.write("foo=bar\nnums=123\ndec=3.14\nAboolean=True\n")
+
+        config = Simple(self.simple_configpath)
+        config.load()
+        assert "foo" in config
+        del config["foo"]
+        assert "foo" not in config
+        assert str(config) == f"<Simple config file at {os.path.abspath(self.simple_configpath)}>"
+        assert len(config) == 3
+        assert config.setdefault("foo", "boo") == "boo"
+        assert len(config) == 4
+
+        config_info = config()
+        for key, value in config_info.items():
+            if key == "parser_version":
+                continue
+
+            elif key == "config_path":
+                assert value == os.path.abspath(self.simple_configpath)
+
+            elif key == "isbase64":
+                assert value is False
+
+            elif key == "readonly":
+                assert value is False
+
+            elif key == "encoding":
+                assert value == "utf-8"
+
+            elif key == "dict_size":
+                assert value == 4
+
+            else:
+                raise AssertionError(f"Unknown key: {key}")
+
+    def testForbiddenCharsInKey(self):
+        """
+        Test if forbidden characters are detected in the key.
+        """
+
+        config = Simple(self.simple_configpath)
+        old_config_items = config.items()
+
+        for key, value in self.forbidden_chars_in_key.items():
+            try:
+                config[key] = value
+
+            except ValueError:
+                pass
+
+            else:
+                assert False  # ValueError should've been raised.
+
+        assert old_config_items == config.items()
+
+    def testForbiddenCharsInValue(self):
+        """
+        Test if forbidden characters are detected in the value.
+        """
+
+        config = Simple(self.simple_configpath)
+        old_config_items = config.items()
+
+        for key, value in self.forbidden_chars_in_value.items():
+            try:
+                config[key] = value
+
+            except ValueError:
+                pass
+
+            else:
+                assert False  # ValueError should've been raised.
+
+        assert old_config_items == config.items()
+
+    def testConvertToBase64(self):
+        """
+        Test if the module can convert a non-base64 configuration file to a base64 configuration file
+        by setting `config.isbase64` to `True`.
+        """
+
+        with open(self.simple_base64_configpath, 'w') as f:
+            f.write("foo=bar\nnums=123\ndec=3.14\nAboolean=True\n")
+
+        config = Simple(self.simple_base64_configpath)
+        config.load()
+
+        assert config["foo"] == "bar"
+        assert config["nums"] == 123
+        assert config["dec"] == 3.14
+        assert config["Aboolean"] is True
         config.isbase64 = True
         config.save()
 
-        with open(self.simple_configpath, "r") as f:
-            assert base64.b64decode(f.read().encode("utf-8")).decode() == "foo=barred\nnums=123\ndec=3.14\nAboolean=True\nnew_key=new_value\n"
+        # Check if the contents of the configuration file are in the expected format.
+        with open(self.simple_base64_configpath, "rb") as f:
+            assert f.read() == b"Zm9vPWJhcgpudW1zPTEyMwpkZWM9My4xNApBYm9vbGVhbj1UcnVlCg=="
 
-    def test_simple_load_base64(self):
-        with open(self.simple_configpath, "w") as f:
-            f.write("Zm9vPWJhcnJlZApudW1zPTEyMwpkZWM9My4xNApBYm9vbGVhbj1UcnVlCm5ld19rZXk9bmV3X3ZhbHVlCg==")
+    def testConvertFromBase64(self):
+        """
+        Test if the module can convert a base64 configuration file to a non-base64 configuration file
+        by setting `config.isbase64` to `False`.
+        """
+
+        with open(self.simple_configpath, 'wb') as f:
+            f.write(b"Zm9vPWJhcgpudW1zPTEyMwpkZWM9My4xNApBYm9vbGVhbj1UcnVlCg==")
 
         config = Simple(self.simple_configpath, isbase64=True)
         config.load()
 
-        assert config.keys() == ["foo", "nums", "dec", "Aboolean", "new_key"]
+        assert config["foo"] == "bar"
+        assert config["nums"] == 123
+        assert config["dec"] == 3.14
+        assert config["Aboolean"] is True
+        config.isbase64 = False
+        config.save()
 
-    def test_advanced_new(self):
-        config = Advanced(TestClass.advanced_configpath, "p4ssw0rd")
-        config.new(
-            name="Advanced Mode Test",
-            author="Chris1320",
-            compression="zlib",
-            encryption="aes256"
-        )
+        # Check if the contents of the configuration file are in the expected format.
+        with open(self.simple_configpath, "r") as f:
+            assert f.read() == "foo=bar\nnums=123\ndec=3.14\nAboolean=True\n"
 
-        # Create a new configuration file by assigning key-value pair.
-        key_value_pairs = {
-            "foo": "bar",  # "foo" is the key, "bar" is the value.
-            "nums": 123,
-            "dec": 3.14,
-            "Aboolean": True,
-            "unintentional variable!": "unintentional value."
-        }
-        for key, value in key_value_pairs.items():
-            config.set(key, value)
+    def testReadOnlyMode(self):
+        """
+        Test read-only mode of simple ConfigHandler.
+        """
 
-        # Remove values
-        config.remove("unintentional variable!")
-        config.save()  # Save the data to the file.
-        config_keys = key_value_pairs.copy()
-        config_keys.pop("unintentional variable!")
-        config_checksum = config._generateChecksum(json.dumps(config_keys).encode("utf-8"))
+        with open(self.simple_configpath, 'w') as f:
+            f.write("foo=bar\nnums=123\ndec=3.14\nAboolean=True\n")
 
-        assert config.epass == "p4ssw0rd"
-        assert config.config_path == TestClass.advanced_configpath
-        assert list(config.keys()) == ["foo", "nums", "dec", "Aboolean"]
-        assert config.metadata() == {
-            "name": "Advanced Mode Test",
-            "author": "Chris1320",
-            "compression": "zlib",
-            "encryption": "aes256",
-            "encoding": "utf-8",
-            "version": Advanced.VERSION,
-            "checksum": config_checksum,
-            "dictionary_size": 4
-        }
-
-    def test_advanced_load(self):
-        config = Advanced(TestClass.advanced_configpath, "p4ssw0rd")
-        if not os.path.exists(TestClass.advanced_configpath):
-            config.new(
-                name="Advanced Mode Test",
-                author="Chris1320",
-                compression="zlib",
-                encryption="aes256"
-            )
-
+        config = Simple(self.simple_configpath, readonly=True)
         config.load()
-        config.get("foo")
-        config.set("foo", "barred")
-        config.set("new_key", "new_value")
-        config.metadata()
-        config.save()  # Save changes
-        config_keys = {}
-        for key in config.keys():
-            config_keys[key] = config.get(key)
 
-        config_checksum = config._generateChecksum(json.dumps(config_keys).encode("utf-8"))
-        assert config.metadata() == {
-            "name": "Advanced Mode Test",
-            "author": "Chris1320",
-            "compression": "zlib",
-            "encryption": "aes256",
-            "encoding": "utf-8",
-            "version": Advanced.VERSION,
-            "checksum": config_checksum,
-            "dictionary_size": len(config_keys)
-        }
+        assert "foo" in config
+        del config["foo"]
+        assert "foo" not in config
+
+        config["another key"] = "another value"
+
+        try:
+            config.save()
+
+        except PermissionError:
+            pass  # This is expected.
+
+        else:
+            assert False  # PermissionError should've been raised because readonly is True.
+
+    def testBulkWriteOperations(self, benchmark):
+        """
+        Perform many write operations using simple ConfigHandler.
+        This also benchmarks the performance of its `save()` method.
+        """
+
+        config = Simple(self.simple_configpath)
+
+        for index, value in enumerate(range(0, self.bulk_ops_range)):
+            config[f"key_{index}"] = value
+
+        benchmark(config.save)
+
+    def testBulkLoadOperations(self, benchmark):
+        """
+        Load the configuration file made by `self.testBulkWriteOperations()`.
+        This also benchmarks the performance of its `load()` method.
+        """
+
+        config = Simple(self.simple_configpath)
+        benchmark(config.load)
+
+        assert len(config) == self.bulk_ops_range

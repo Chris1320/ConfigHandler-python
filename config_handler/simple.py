@@ -37,21 +37,17 @@ class Simple:
     - Comments are supported by appending a hash (#) at the beginning of the line.
     - Each line of the file contains one key-value pair separated by an equal (=) sign.
     - Keys must follow the constraints below:
-        - Keys must be a string. If not, it will be converted into a string if possible.
-        - Keys must not contain an equal (=) sign.
-        - Keys must not contain a newline (\n).
+        - Keys must be a string.
         - Keys must not start with a hash (#).
-    - Values can be any string, integer, float, or boolean.
+        - Keys must not contain a newline (\n).
+        - Keys must not contain an equal (=) sign.
+    - Values must be any string, integer, float, or boolean.
+    - Values must not contain a newline (\n).
     """
 
     parser_version: Final[tuple[int, int, int]] = (0, 3, 0)  # Parser version
     _separator: Final[str] = '='
     _comment_char: Final[str] = '#'
-    _forbidden_key_chars: Final[tuple[str, ...]] = (
-        _separator,
-        _comment_char,
-        '\n'
-    )
 
     def __init__(
         self,
@@ -65,6 +61,8 @@ class Simple:
         :param isbase64: True if the configuration file is encoded via Base64.
         :param readonly: True if the configuration file is read-only.
         :param encoding: The encoding to use.
+
+        Read-only mode allows manipulation but not writing to the configuration file.
         """
 
         self.config_path = config_path
@@ -76,35 +74,36 @@ class Simple:
 
     def __contains__(self, key: str) -> bool:
         """
-        Check if self.__data has a <key> key.
+        Check if <key> exists in the configuration file.
         """
 
         return key in self.__data
 
     def __delitem__(self, key: str) -> None:
         """
-        Remove a key.
+        Remove a key from the configuration file.
         """
 
         del self.__data[key]
 
-    def __setitem__(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: str, value: str | int | float | bool) -> None:
         """
         Set a key-value pair in the configuration file.
+        Raises a `ValueError` if the key or value has invalid characters.
 
         :param key: The key of the pair.
         :param value: The value of the key.
         """
 
-        if self.readonly:
-            raise PermissionError("The configuration file is read-only.")
-
         if not self._parseKey(key):
             raise ValueError("Key contains invalid characters.")
 
+        if not self._parseValue(value):
+            raise ValueError("Value contains invalid characters.")
+
         self.__data[key] = value
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> str | int | float | bool:
         """
         Get the value of <key>.
         """
@@ -125,6 +124,20 @@ class Simple:
 
         return len(self.__data)
 
+    def __call__(self) -> dict:
+        """
+        Return information about the configuration file in type<dict>.
+        """
+
+        return {
+            "parser_version": self.parser_version,
+            "config_path": self.config_path,
+            "isbase64": self.isbase64,
+            "readonly": self.readonly,
+            "encoding": self.encoding,
+            "dict_size": len(self.__data)
+        }
+
     @property
     def config_path(self) -> str:
         return self._config_path
@@ -136,10 +149,17 @@ class Simple:
     @property
     def exists(self) -> bool:
         """
-        Check if the configuration file exists.
+        Check if the configuration file exists in the file system.
         """
 
         return os.path.isfile(self.config_path)
+
+    @property
+    def _forbidden_key_chars(self) -> tuple[str, ...]:
+        return (
+            self._separator,
+            '\n'
+        )
 
     def _parseKey(self, key: str) -> bool:
         """
@@ -149,10 +169,31 @@ class Simple:
         if type(key) is not str:
             return False
 
+        elif key.startswith(self._comment_char):
+            return False
+
         elif any(char in key for char in self._forbidden_key_chars):
             return False
 
         else:
+            return True
+
+    def _parseValue(self, value: Any) -> bool:
+        """
+        Check if the value is valid.
+        """
+
+        if type(value) not in (str, int, float, bool):  # Check if data type is accepted.
+            return False
+
+        elif type(value) is str:  # Perform checks when the value is a string.
+            if '\n' in value:
+                return False
+
+            else:
+                return True
+
+        else:  # Return True when no additional checks are needed.
             return True
 
     def load(self) -> None:
@@ -212,9 +253,67 @@ class Simple:
             # Encode to Base64 if self.base64 is True.
             f.write(base64.b64encode(config_data.encode(self.encoding)) if self.isbase64 else config_data)
 
+    def setdefault(self, key: str, default: Any = None) -> Any:
+        """
+        Set the value of <key> to <default> if it does not exist.
+        Raises a `ValueError` if the key or value has invalid characters.
+
+        :returns: The value of <key> if it exists, otherwise <default>.
+        """
+
+        if not self._parseKey(key):
+            raise ValueError("Key contains invalid characters.")
+
+        if not self._parseValue(default):
+            raise ValueError("Default value contains invalid characters.")
+
+        return self.__data.setdefault(key, default)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get the value of <key> or <default> if the key does not exist.
+        """
+
+        return self.__data.get(key, default)
+
+    def pop(self, key: str, default: Any = None) -> Any:
+        """
+        Remove and return the value of <key>. <default> is returned if the key does not exist.
+        """
+
+        return self.__data.pop(key, default)
+
+    def popitem(self) -> tuple[str, Any]:
+        """
+        Pop a key-pair value from the configuration file.
+        """
+
+        return self.__data.popitem()
+
+    def items(self) -> list[tuple[str, Any]]:
+        """
+        Return a list of key-value pairs of the configuration file.
+        """
+
+        return list(self.__data.items())
+
     def keys(self) -> list[str]:
         """
         Return existing keys in the configuration file.
         """
 
         return list(self.__data.keys())
+
+    def values(self) -> list[Any]:
+        """
+        Return a list of values in the configuration file.
+        """
+
+        return list(self.__data.values())
+
+    def clear(self) -> None:
+        """
+        Clear all key-value pairs in the configuration file.
+        """
+
+        self.__data.clear()

@@ -27,13 +27,13 @@ setup(
     include_package_data=True,
     install_requires=[],  # Required packages
     extras_require={  # Optional packages for optional features
-        "AES Encryption": ["pycryptodomex"],
-        "Pretty Table": ["prettytable"],
-        "LZ4 Compression": ["lz4"],
+        "encryption": ["pycryptodomex"],
+        "ui": ["prettytable", "colorama"],
+        "compression": ["lz4"]
     },
     entry_points={
         "console_scripts": [
-            "config_handler=config_handler.__main__:main",
+            "config_handler=config_handler.__main__:main"
         ]
     }
 )
