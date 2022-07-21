@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import base64
 from hashlib import sha256
 
 try:
@@ -35,27 +34,24 @@ try:
 except ModuleNotFoundError:
     available: bool = False  # There is no supported cryptography module available.
 
-# _pad() and _unpad() are referenced from:
-# https://stackoverflow.com/questions/12524994/encrypt-decrypt-using-pycrypto-aes-256
 
-
-def _pad(data: bytes, encoding: str = "utf-8") -> bytes:
+def _pad(data: bytes) -> bytes:
     """
     Add padding to <data>.
     """
 
-    return data + (AES.block_size - len(data) % AES.block_size) * chr(AES.block_size - len(data) % AES.block_size).encode(encoding)
+    return  # TODO
 
 
-def _unpad(data: bytes, encoding: str = "utf-8") -> bytes:
+def _unpad(data: bytes) -> bytes:
     """
     Remove padding from <data>.
     """
 
-    return data[:-ord(data[len(data) - 1:])]
+    return  # TODO
 
 
-def encrypt(key: bytes, data: bytes, encoding: str = "utf-8") -> bytes:
+def encrypt(key: bytes | str, data: bytes | str) -> bytes:
     """
     Encrypt <data> using <key> as key.
 
@@ -64,13 +60,16 @@ def encrypt(key: bytes, data: bytes, encoding: str = "utf-8") -> bytes:
     :param encoding: The encoding to use.
     """
 
-    key_hash: bytes = sha256(key).digest()  # Get the SHA-256 hash of the key so we have a 32-bytes key.
+    if type(data) is str:
+        data = _pad(data.encode())
+
+    key_hash: bytes = sha256(key if type(key) is bytes else key.encode()).digest()  # Get the SHA-256 hash of the key so we have a 32-bytes key.
     iv: bytes = Random.new().read(AES.block_size)  # Generate a random 16-bytes initialization vector.
     aes = AES.new(key_hash, AES.MODE_CBC, iv=iv)  # Create a new AES object.
-    return aes.encrypt(_pad(data, encoding))  # Encrypt the data.
+    return aes.encrypt(data)  # Encrypt the data.
 
 
-def decrypt(key: bytes, data: bytes, encoding: str = "utf-8") -> bytes:
+def decrypt(key: bytes, data: bytes) -> bytes:
     """
     Decrypt <data> using <key> as key.
 
@@ -82,4 +81,4 @@ def decrypt(key: bytes, data: bytes, encoding: str = "utf-8") -> bytes:
     key_hash: bytes = sha256(key).digest()  # TODO
     iv: bytes = Random.new().read(AES.block_size)  # Generate a random 16-bytes initialization vector.
     aes = AES.new(key_hash, AES.MODE_CBC, iv=iv)  # Create a new AES object.
-    return _unpad(aes.decrypt(data), encoding)  # Decrypt the data.
+    return aes.decrypt(data)  # Decrypt the data.
