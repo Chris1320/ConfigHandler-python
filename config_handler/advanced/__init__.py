@@ -30,32 +30,33 @@ from hashlib import blake2b
 
 
 class Advanced:
-    r"""
+    """
     A class that creates and manipulates an "advanced" configuration file.
 
     This type configuration file uses the JSON format.
     """
 
     parser_version: Final[tuple[int, int, int]] = (2, 0, 0)
-
-    supported_compression: Final[tuple[str, ...]] = (
+    supported_compression: Final[tuple] = (
+        None,
         "zlib",
         "lz4"
     )
-    supported_encryption: Final[tuple[str, ...]] = (
-        "aes256",
+    supported_encryption: Final[tuple] = (
+        None,
+        "aes256"
     )
 
     def __init__(
         self,
         config_path: str,
-        readonly: bool,
+        readonly: bool = False,
         encoding: str = "utf-8"
     ):
         """
         :param config_path: The path of the configuration file to open or create.
-        :param readonly: True if the configuration file is read-only.
-        :param encoding: The encoding to use.
+        :param readonly: True if the configuration file is read-only. (Default: `False`)
+        :param encoding: The encoding to use. (Default: `utf-8`)
 
         Read-only mode allows manipulation but not writing to the configuration file.
         """
@@ -81,6 +82,10 @@ class Advanced:
 
     @compression.setter
     def compression(self, compression: str | None):
+        """
+        Check if the compression algorithm is supported first before setting.
+        """
+
         if compression in self.supported_compression:
             self._compression = compression
 
@@ -93,6 +98,10 @@ class Advanced:
 
     @encryption.setter
     def encryption(self, encryption: str | None):
+        """
+        Check if the encryption algorithm is supported first before setting.
+        """
+
         if encryption in self.supported_encryption:
             self._encryption = encryption
 
@@ -135,6 +144,11 @@ class Advanced:
         self.author = author
         self.compression = compression
         self.encryption = encryption
+
+        self.__initialized = True
+        self.__data = {}
+
+        self.save()
 
     def load(self):
         """
