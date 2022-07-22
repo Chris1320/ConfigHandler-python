@@ -10,5 +10,5 @@ build/
 .pytest_cache/
 
 # Used as temporary files when testing the package.
-tests/simple/*.conf
-tests/advanced/*.conf
+tests_data/simple/*.conf
+tests_data/advanced/*.conf

@@ -29,11 +29,10 @@ from typing import Any
 from typing import Final
 
 from config_handler.simple import Simple
-# from config_handler.advanced import Advanced
 
 
 class TestSimpleConfigHandler:
-    _tests_folder: Final[str] = os.path.join(os.getcwd(), "tests", "simple")
+    _tests_folder: Final[str] = os.path.join(os.getcwd(), "tests_data", "simple")
     simple_configpath: Final[str] = os.path.join(_tests_folder, "test.conf")
     simple_base64_configpath: Final[str] = os.path.join(_tests_folder, "base64_test.conf")
 

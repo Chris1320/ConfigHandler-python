@@ -24,34 +24,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from hashlib import sha256
-
 try:
     from Cryptodome import Random
     from Cryptodome.Cipher import AES
+    from Cryptodome.Protocol.KDF import PBKDF2
+    from Cryptodome.Util.Padding import pad
+    from Cryptodome.Util.Padding import unpad
     available: bool = True
 
 except ModuleNotFoundError:
     available: bool = False  # There is no supported cryptography module available.
 
 
-def _pad(data: bytes) -> bytes:
-    """
-    Add padding to <data>.
-    """
-
-    return  # TODO
-
-
-def _unpad(data: bytes) -> bytes:
-    """
-    Remove padding from <data>.
-    """
-
-    return  # TODO
-
-
-def encrypt(key: bytes | str, data: bytes | str) -> bytes:
+def encrypt(key: bytes | str, data: bytes) -> bytes:
     """
     Encrypt <data> using <key> as key.
 
@@ -60,16 +45,19 @@ def encrypt(key: bytes | str, data: bytes | str) -> bytes:
     :param encoding: The encoding to use.
     """
 
-    if type(data) is str:
-        data = _pad(data.encode())
+    key_size = 32
+    salt_size = 16
+    block_size = AES.block_size
 
-    key_hash: bytes = sha256(key if type(key) is bytes else key.encode()).digest()  # Get the SHA-256 hash of the key so we have a 32-bytes key.
+    salt = Random.new().read(salt_size)  # Generate a random 16-byte salt.
+    key_hash: bytes = PBKDF2(key, salt, dkLen=key_size, count=50000)  # type: ignore
     iv: bytes = Random.new().read(AES.block_size)  # Generate a random 16-bytes initialization vector.
+
     aes = AES.new(key_hash, AES.MODE_CBC, iv=iv)  # Create a new AES object.
-    return aes.encrypt(data)  # Encrypt the data.
+    return salt + iv + aes.encrypt(pad(data, block_size))  # Encrypt the data.
 
 
-def decrypt(key: bytes, data: bytes) -> bytes:
+def decrypt(key: bytes | str, data: bytes) -> bytes:
     """
     Decrypt <data> using <key> as key.
 
@@ -78,7 +66,16 @@ def decrypt(key: bytes, data: bytes) -> bytes:
     :param encoding: The encoding to use.
     """
 
-    key_hash: bytes = sha256(key).digest()  # TODO
-    iv: bytes = Random.new().read(AES.block_size)  # Generate a random 16-bytes initialization vector.
-    aes = AES.new(key_hash, AES.MODE_CBC, iv=iv)  # Create a new AES object.
-    return aes.decrypt(data)  # Decrypt the data.
+    key_size = 32
+    salt_size = 16
+    block_size = AES.block_size
+
+    iv = data[salt_size:salt_size + block_size]  # Get the iv of the ciphertext.
+    salt = data[:salt_size]  # Get the first 16 bytes of the data as the salt used.
+    enc_data = data[salt_size + block_size:]  # Get the encrypted data.
+
+    key_hash : bytes = PBKDF2(key, salt, dkLen=key_size, count=50000)  # type: ignore
+
+    aes = AES.new(key_hash, AES.MODE_CBC, iv=iv)
+
+    return unpad(aes.decrypt(enc_data), block_size)

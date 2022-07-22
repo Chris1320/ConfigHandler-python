@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--color=yes --code-highlight=yes -vvv"
+testpaths = [
+    "tests"
+]
+pythonpath = [
+    "."
+]
