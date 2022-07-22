@@ -38,6 +38,14 @@ class Advanced:
 
     parser_version: Final[tuple[int, int, int]] = (2, 0, 0)
 
+    supported_compression: Final[tuple[str, ...]] = (
+        "zlib",
+        "lz4"
+    )
+    supported_encryption: Final[tuple[str, ...]] = (
+        "aes256",
+    )
+
     def __init__(
         self,
         config_path: str,
@@ -73,7 +81,11 @@ class Advanced:
 
     @compression.setter
     def compression(self, compression: str | None):
-        self._compression = compression  # TODO: Check if the compression name is valid.
+        if compression in self.supported_compression:
+            self._compression = compression
+
+        else:
+            raise ValueError(f"Unsupported compression algorithm: {compression}")
 
     @property
     def encryption(self) -> str | None:
@@ -81,7 +93,11 @@ class Advanced:
 
     @encryption.setter
     def encryption(self, encryption: str | None):
-        self._encryption = encryption  # TODO: Check if the encryption name is valid.
+        if encryption in self.supported_encryption:
+            self._encryption = encryption
+
+        else:
+            raise ValueError(f"Unsupported encryption algorithm: {encryption}")
 
     @property
     def exists(self) -> bool:
@@ -117,8 +133,8 @@ class Advanced:
 
         self.name = name
         self.author = author
-        self.compression = compression  # TODO: Check if the compression name is valid.
-        self.encryption = encryption  # TODO: Check if the encryption name is valid.
+        self.compression = compression
+        self.encryption = encryption
 
     def load(self):
         """
