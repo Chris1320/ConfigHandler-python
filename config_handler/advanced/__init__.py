@@ -70,13 +70,78 @@ class Advanced:
         """
 
         self.config_path = config_path
-        self.__config_pass = config_pass
         self.readonly = readonly
         self.encoding = encoding
         self.strict = strict
 
+        self.__config_pass = config_pass
         self.__initialized = False  # Is `self.load()` or `self.new()` called?
         self.__data = {}  # The configuration file contents.
+
+    def __contains__(self, key: str) -> bool:
+        """
+        Check if <key> exists in the configuration file.
+        """
+
+        return key in self.__data
+
+    def __delitem__(self, key: str) -> None:
+        """
+        Remove a key from the configuration file.
+        """
+
+        del self.__data[key]
+
+    def __setitem__(self, key: str, value: str | int | float | bool | None) -> None:
+        """
+        Set a key-value pair in the configuration file.
+
+        :param key: The key of the pair.
+        :param value: The value of the key.
+        """
+
+        self.__data[key] = value
+
+    def __getitem__(self, key: str) -> str | int | float | bool | None:
+        """
+        Get the value of <key>.
+        """
+
+        return self.__data[key]
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the configuration file.
+        """
+
+        return f"<Advanced config file at {self.config_path}>"
+
+    def __len__(self) -> int:
+        """
+        Return the number of key-value pairs in the configuration file.
+        """
+
+        return len(self.__data)
+
+    def __call__(self) -> dict:
+        """
+        Return information about the configuration file in type<dict>.
+        """
+
+        return {
+            "name": self.name,
+            "author": self.author,
+
+            "compression": self.compression,
+            "encryption": self.encryption,
+            "encoding": self.encoding,
+
+            "parser": {
+                "version": self.parser_version
+            },
+
+            "dict_size": len(self.__data)
+        }
 
     @property
     def config_path(self) -> str:
@@ -119,6 +184,14 @@ class Advanced:
             raise ValueError(f"Unsupported encryption algorithm: {encryption}")
 
     @property
+    def checksum(self) -> str:
+        """
+        Get the checksum of the configuration file data.
+        """
+
+        return self._generateChecksum(json.dumps(self.__data).encode(self.encoding))
+
+    @property
     def exists(self) -> bool:
         """
         Check if the configuration file exists in the file system.
@@ -135,6 +208,13 @@ class Advanced:
         """
 
         return blake2b(data, digest_size=digest_size).hexdigest()
+
+    def _parseKey(self, key: str) -> bool:
+        """
+        Check if the key is valid.
+        """
+
+        return type(key) is str  # The key is valid if it is a string.
 
     def _pack(self, data: bytes) -> bytes:
         """
