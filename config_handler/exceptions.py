@@ -32,3 +32,12 @@ class ChecksumError(Exception):
 
     def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
         super().__init__(message)
+
+
+class ConfigFileNotInitializedError(Exception):
+    """
+    Exception raised when the configuration file has not yet been initialized.
+    """
+
+    def __init__(self, message: str = "The configuration file has not yet been initialized."):
+        super().__init__(message)
