@@ -41,3 +41,12 @@ class ConfigFileNotInitializedError(Exception):
 
     def __init__(self, message: str = "The configuration file has not yet been initialized."):
         super().__init__(message)
+
+
+class InvalidConfigurationFileError(Exception):
+    """
+    Exception raised when the configuration file is unable to be loaded.
+    """
+
+    def __init__(self, message: str = "The configuration file is invalid or corrupted."):
+        super().__init__(message)

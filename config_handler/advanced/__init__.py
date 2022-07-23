@@ -56,21 +56,24 @@ class Advanced:
         config_path: str,
         config_pass: str | None = None,
         readonly: bool = False,
+        strict: bool = False,
         encoding: str = "utf-8"
     ):
         """
         :param config_path: The path of the configuration file to open or create.
         :param config_pass: The configuration file encryption password. (Default: `None`)
         :param readonly: True if the configuration file is read-only. (Default: `False`)
+        :param strict: True to check the checksum of the configuration file. (Default: `False`)
         :param encoding: The encoding to use. (Default: `utf-8`)
 
         Read-only mode allows manipulation but not writing to the configuration file.
         """
 
         self.config_path = config_path
-        self.config_pass = config_pass
+        self.__config_pass = config_pass
         self.readonly = readonly
         self.encoding = encoding
+        self.strict = strict
 
         self.__initialized = False  # Is `self.load()` or `self.new()` called?
         self.__data = {}  # The configuration file contents.
@@ -138,29 +141,18 @@ class Advanced:
         Perform compression and encryption to <data> if needed.
         """
 
-        if self.compression is None:
-            pass
+        data = compression.compress(data, self.compression)
+        data = encryption.encrypt(data, self.encryption, self.__config_pass)
 
-        elif self.compression == "zlib":
-            data = compression.zlib.compress(data)
+        return data
 
-        elif self.compression == "lz4":
-            data = compression.lz4.compress(data)
+    def _unpack(self, data: bytes) -> bytes:
+        """
+        Perform decryption and decompression to <data> if needed.
+        """
 
-        else:
-            raise ValueError(f"Unsupported compression algorithm: {self.compression}")
-
-        if self.encryption is None:
-            pass  # Do nothing to data if encryption is None.
-
-        elif self.encryption == "aes256":
-            if self.config_pass is None:
-                raise ValueError("Configuration password is not set but encryption is on.")
-
-            data = encryption.aes256.encrypt(self.config_pass, data)
-
-        else:
-            raise ValueError(f"Unsupported encryption algorithm: {self.encryption}")
+        data = encryption.decrypt(data, self.encryption, self.__config_pass)
+        data = compression.decompress(data, self.compression)
 
         return data
 
@@ -202,7 +194,45 @@ class Advanced:
         will be overwritten.
         """
 
-        # TODO
+        if not self.exists:
+            raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
+
+        # ? Decrypt
+        # ? Decompress
+        # ? Verify checksum
+        # ? json.decode() to dict
+
+        with open(self.config_path, "rb") as f:
+            # Step 1: Read the file.
+            config = json.loads(f.read().decode())
+
+        # Get configuration file properties.
+        if "parser" not in config:
+            raise NotImplementedError("Backwards compatibility to older configuration files has not yet been implemented.")
+            # TODO: The configuration file was made by an old version of ConfigHandler.
+
+        else:
+            # TODO: If there are any breaking changes to how the configuration file is read in the future, add version checks here.
+            try:
+                # Step 2: Decrypt and decompress the data.
+                self.name = config["name"]
+                self.author = config["author"]
+
+                self.compression = config["compression"]
+                self.encryption = config["encryption"]
+                self.encoding = config["encoding"]
+
+                # Step 3: Unpack and load the data.
+                self.__data = json.loads(self._unpack(config["data"]).decode(self.encoding))
+                if self.strict:
+                    # Step 4: Verify the checksum if strict.
+                    if config["checksum"] != self._generateChecksum(self.__data):
+                        raise exceptions.ChecksumError
+
+            except KeyError:
+                raise exceptions.InvalidConfigurationFileError
+
+        self.__initialized = True
 
     def save(self) -> None:
         """
@@ -222,13 +252,15 @@ class Advanced:
 
         # ? dict to json.encode()
         # ? Generate checksum
-        # ? Encrypt
         # ? Compress
-        # ? Encode (Base64)
+        # ? Encrypt
 
+        # Step 1: Convert dictionary to JSON.
         dictionary = json.dumps(self.__data).encode(self.encoding)
 
-        # Step 1: Create the JSON data.
+        # Step 2: Create the JSON data.
+        # Step 3: Generate checksum of the data.
+        # Step 4: Compress and encrypt the data.
         to_write = {
             "name": self.name,
             "author": self.author,
@@ -244,3 +276,7 @@ class Advanced:
             "checksum": self._generateChecksum(dictionary),
             "data": self._pack(dictionary)
         }
+
+        with open(self.config_path, "wb") as f:
+            # Step 5: Write to file.
+            f.write(json.dumps(to_write).encode())

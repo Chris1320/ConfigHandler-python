@@ -26,3 +26,39 @@ SOFTWARE.
 
 from config_handler.advanced.compression import lz4
 from config_handler.advanced.compression import zlib
+
+
+def compress(data: bytes, algorithm: str | None) -> bytes:
+    """
+    Compress <data> using <algorithm>.
+    """
+
+    if algorithm is None:
+        return data  # Do not modify the data.
+
+    elif algorithm == "zlib":
+        return zlib.compress(data)
+
+    elif algorithm == "lz4":
+        return lz4.compress(data)
+
+    else:
+        raise ValueError(f"Unsupported compression algorithm: {algorithm}")
+
+
+def decompress(data: bytes, algorithm: str | None) -> bytes:
+    """
+    Decompress <data> using <algorithm>.
+    """
+
+    if algorithm is None:
+        return data
+
+    elif algorithm == "zlib":
+        return zlib.decompress(data)
+
+    elif algorithm == "lz4":
+        return lz4.decompress(data)
+
+    else:
+        raise ValueError(f"Unsupported compression algorithm: {algorithm}")

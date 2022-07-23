@@ -36,13 +36,12 @@ except ModuleNotFoundError:
     available: bool = False  # There is no supported cryptography module available.
 
 
-def encrypt(key: bytes | str, data: bytes) -> bytes:
+def encrypt(data: bytes, key: bytes | str) -> bytes:
     """
     Encrypt <data> using <key> as key.
 
-    :param key: The key to use.
     :param data: The data to encrypt.
-    :param encoding: The encoding to use.
+    :param key: The key to use.
     """
 
     key_size = 32
@@ -57,13 +56,12 @@ def encrypt(key: bytes | str, data: bytes) -> bytes:
     return salt + iv + aes.encrypt(pad(data, block_size))  # Encrypt the data.
 
 
-def decrypt(key: bytes | str, data: bytes) -> bytes:
+def decrypt(data: bytes, key: bytes | str) -> bytes:
     """
     Decrypt <data> using <key> as key.
 
-    :param key: The key to use.
     :param data: The data to decrypt.
-    :param encoding: The encoding to use.
+    :param key: The key to use.
     """
 
     key_size = 32

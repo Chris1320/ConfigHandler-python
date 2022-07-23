@@ -25,3 +25,39 @@ SOFTWARE.
 """
 
 from config_handler.advanced.encryption import aes256
+
+
+def encrypt(data: bytes, algorithm: str | None, key: str | None = None) -> bytes:
+    """
+    Encrypt <data> using <algorithm> as the encryption algorithm and <key> as the key.
+    """
+
+    if algorithm is None:
+        return data  # Do not modify the data.
+
+    if key is None:
+        raise ValueError("Configuration password is not set but encryption is on.")
+
+    elif algorithm == "aes256":
+        return aes256.encrypt(data, key)
+
+    else:
+        raise ValueError(f"Unsupported encryption algorithm: {algorithm}")
+
+
+def decrypt(data: bytes, algorithm: str | None, key: str | None = None) -> bytes:
+    """
+    Decrypt <data> using <algorithm> as the encryption algorithm and <key> as the key.
+    """
+
+    if algorithm is None:
+        return data
+
+    if key is None:
+        raise ValueError("Configuration password is not set but encryption is on.")
+
+    if algorithm == "aes256":
+        return aes256.decrypt(data, key)
+
+    else:
+        raise ValueError(f"Unsupported encryption algorithm: {algorithm}")
