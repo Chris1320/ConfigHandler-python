@@ -26,6 +26,8 @@ SOFTWARE.
 
 import os
 import json
+import base64
+from typing import Any
 from typing import Final
 from hashlib import blake2b
 
@@ -83,12 +85,18 @@ class Advanced:
         Check if <key> exists in the configuration file.
         """
 
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
         return key in self.__data
 
     def __delitem__(self, key: str) -> None:
         """
         Remove a key from the configuration file.
         """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
 
         del self.__data[key]
 
@@ -100,12 +108,18 @@ class Advanced:
         :param value: The value of the key.
         """
 
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
         self.__data[key] = value
 
     def __getitem__(self, key: str) -> str | int | float | bool | None:
         """
         Get the value of <key>.
         """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
 
         return self.__data[key]
 
@@ -121,12 +135,18 @@ class Advanced:
         Return the number of key-value pairs in the configuration file.
         """
 
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
         return len(self.__data)
 
     def __call__(self) -> dict:
         """
         Return information about the configuration file in type<dict>.
         """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
 
         return {
             "name": self.name,
@@ -188,6 +208,9 @@ class Advanced:
         """
         Get the checksum of the configuration file data.
         """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
 
         return self._generateChecksum(json.dumps(self.__data).encode(self.encoding))
 
@@ -264,7 +287,10 @@ class Advanced:
         self.__initialized = True
         self.__data = {}
 
-        self.save()
+        # ? I think we should not call `save()` here.
+        # ? Let the user manually save it.
+        # ? This also allows in-memory configuration manipulation.
+        # self.save()
 
     def load(self) -> None:
         """
@@ -303,7 +329,7 @@ class Advanced:
                 self.encoding = config["encoding"]
 
                 # Step 3: Unpack and load the data.
-                self.__data = json.loads(self._unpack(config["data"]).decode(self.encoding))
+                self.__data = json.loads(self._unpack(base64.b64decode(config["data"])).decode(self.encoding))
                 if self.strict:
                     # Step 4: Verify the checksum if strict.
                     if config["checksum"] != self._generateChecksum(self.__data):
@@ -354,9 +380,95 @@ class Advanced:
             },
 
             "checksum": self._generateChecksum(dictionary),
-            "data": self._pack(dictionary)
+            "data": base64.b64encode(self._pack(dictionary)).decode(self.encoding)
         }
 
         with open(self.config_path, "wb") as f:
             # Step 5: Write to file.
             f.write(json.dumps(to_write).encode())
+
+    def setdefault(self, key: str, default: Any = None) -> Any:
+        """
+        Set the value of <key> to <default> if it does not exist.
+        Raises a `ValueError` if the key or value has invalid characters.
+
+        :returns: The value of <key> if it exists, otherwise <default>.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        if not self._parseKey(key):
+            raise ValueError("Key contains invalid characters.")
+
+        return self.__data.setdefault(key, default)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get the value of <key> or <default> if the key does not exist.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        return self.__data.get(key, default)
+
+    def pop(self, key: str, default: Any = None) -> Any:
+        """
+        Remove and return the value of <key>. <default> is returned if the key does not exist.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        return self.__data.pop(key, default)
+
+    def popitem(self) -> tuple[str, Any]:
+        """
+        Pop a key-pair value from the configuration file.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        return self.__data.popitem()
+
+    def items(self) -> list[tuple[str, Any]]:
+        """
+        Return a list of key-value pairs of the configuration file.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        return list(self.__data.items())
+
+    def keys(self) -> list[str]:
+        """
+        Return existing keys in the configuration file.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        return list(self.__data.keys())
+
+    def values(self) -> list[Any]:
+        """
+        Return a list of values in the configuration file.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        return list(self.__data.values())
+
+    def clear(self) -> None:
+        """
+        Clear all key-value pairs in the configuration file.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        self.__data.clear()
