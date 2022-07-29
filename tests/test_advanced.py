@@ -38,6 +38,7 @@ class TestAdvancedConfigHandler:
 
     bulk_ops_range: Final[int] = 10000
 
+    test_password: Final[str] = "test_password"
     key_value_pairs: Final[dict[str, Any]] = {
         "foo": "bar",
         "nums": 123,
@@ -116,13 +117,75 @@ class TestAdvancedConfigHandler:
         assert config["foo"] == "bar2"
 
     def testCompression(self):
-        pass
+        for current_compression in Advanced.supported_compression:
+            if current_compression is None:
+                continue
+
+            config = Advanced(self.advanced_configpath)
+            config.new(
+                name="Compression Test",
+                author="ConfigHandler Test",
+                compression=current_compression,
+                encryption=None
+            )
+            for key, value in self.key_value_pairs.items():
+                config[key] = value
+
+            config.save()
+            del config
+            config = Advanced(self.advanced_configpath)
+            config.load()
+            assert len(config) == len(self.key_value_pairs)
 
     def testEncryption(self):
-        pass
+        for current_encryption in Advanced.supported_encryption:
+            if current_encryption is None:
+                continue
+
+            config = Advanced(self.advanced_configpath, self.test_password)
+            config.new(
+                name="Encryption Test",
+                author="ConfigHandler Test",
+                compression=None,
+                encryption=current_encryption
+            )
+            for key, value in self.key_value_pairs.items():
+                config[key] = value
+
+            config.save()
+            del config
+            config = Advanced(self.advanced_configpath, self.test_password)
+            config.load()
+            assert len(config) == len(self.key_value_pairs)
 
     def testCompressionAndEncryption(self):
-        pass
+        for current_compression in Advanced.supported_compression:
+            for current_encryption in Advanced.supported_encryption:
+                if current_encryption is not None:
+                    config = Advanced(self.advanced_configpath, self.test_password)
+
+                else:
+                    config = Advanced(self.advanced_configpath)
+
+                config.new(
+                    name="Compression and Encryption Test",
+                    author="ConfigHandler Test",
+                    compression=current_compression,
+                    encryption=current_encryption
+                )
+                for key, value in self.key_value_pairs.items():
+                    config[key] = value
+
+                config.save()
+                del config
+                if current_encryption is not None:
+                    config = Advanced(self.advanced_configpath, self.test_password)
+
+                else:
+                    config = Advanced(self.advanced_configpath)
+
+                config.load()
+                assert len(config) == len(self.key_value_pairs)
 
     def testDunderMethods(self):
         pass
