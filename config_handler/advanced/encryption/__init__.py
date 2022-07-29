@@ -24,10 +24,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import base64
+
 from config_handler.advanced.encryption import aes256
 
 
-def encrypt(data: bytes, algorithm: str | None, key: str | None = None) -> bytes:
+def encrypt(
+    data: str,
+    algorithm: str | None,
+    key: str | None = None,
+    encoding: str = "utf-8"
+) -> str:
     """
     Encrypt <data> using <algorithm> as the encryption algorithm and <key> as the key.
     """
@@ -39,13 +46,18 @@ def encrypt(data: bytes, algorithm: str | None, key: str | None = None) -> bytes
         raise ValueError("Configuration password is not set but encryption is on.")
 
     elif algorithm == "aes256":
-        return aes256.encrypt(data, key)
+        return aes256.encrypt(data, key, encoding)
 
     else:
         raise ValueError(f"Unsupported encryption algorithm: {algorithm}")
 
 
-def decrypt(data: bytes, algorithm: str | None, key: str | None = None) -> bytes:
+def decrypt(
+    data: str,
+    algorithm: str | None,
+    key: str | None = None,
+    encoding: str = "utf-8"
+) -> str:
     """
     Decrypt <data> using <algorithm> as the encryption algorithm and <key> as the key.
     """
@@ -57,7 +69,7 @@ def decrypt(data: bytes, algorithm: str | None, key: str | None = None) -> bytes
         raise ValueError("Configuration password is not set but encryption is on.")
 
     if algorithm == "aes256":
-        return aes256.decrypt(data, key)
+        return aes256.decrypt(data, key, encoding)
 
     else:
         raise ValueError(f"Unsupported encryption algorithm: {algorithm}")

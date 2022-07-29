@@ -26,7 +26,6 @@ SOFTWARE.
 
 import os
 import json
-import base64
 from typing import Any
 from typing import Final
 from hashlib import blake2b
@@ -34,6 +33,7 @@ from hashlib import blake2b
 from config_handler import exceptions
 from config_handler.advanced import encryption
 from config_handler.advanced import compression
+
 
 class Advanced:
     """
@@ -110,6 +110,9 @@ class Advanced:
 
         if not self.__initialized:
             raise exceptions.ConfigFileNotInitializedError
+
+        if not self._parseKey(key):
+            raise ValueError("Key contains invalid characters.")
 
         self.__data[key] = value
 
@@ -222,7 +225,7 @@ class Advanced:
 
         return os.path.isfile(self.config_path)
 
-    def _generateChecksum(self, data: bytes, digest_size: int = 8) -> str:
+    def _generateChecksum(self, data: str | bytes, digest_size: int = 8) -> str:
         """
         Generate a BLAKE2 hash of <data>.
 
@@ -230,7 +233,11 @@ class Advanced:
         :param digest_size: The size of the hash. (default: 8; 64 bits)
         """
 
-        return blake2b(data, digest_size=digest_size).hexdigest()
+        if type(data) is str:
+            # Convert the string to bytes.
+            data = data.encode(self.encoding)
+
+        return blake2b(data, digest_size=digest_size).hexdigest()  # type: ignore
 
     def _parseKey(self, key: str) -> bool:
         """
@@ -239,23 +246,23 @@ class Advanced:
 
         return type(key) is str  # The key is valid if it is a string.
 
-    def _pack(self, data: bytes) -> bytes:
+    def _pack(self, data: str) -> str:
         """
         Perform compression and encryption to <data> if needed.
         """
 
-        data = compression.compress(data, self.compression)
-        data = encryption.encrypt(data, self.encryption, self.__config_pass)
+        data = compression.compress(data, self.compression, self.encoding)
+        data = encryption.encrypt(data, self.encryption, self.__config_pass, self.encoding)
 
         return data
 
-    def _unpack(self, data: bytes) -> bytes:
+    def _unpack(self, data: str) -> str:
         """
         Perform decryption and decompression to <data> if needed.
         """
 
-        data = encryption.decrypt(data, self.encryption, self.__config_pass)
-        data = compression.decompress(data, self.compression)
+        data = encryption.decrypt(data, self.encryption, self.__config_pass, self.encoding)
+        data = compression.decompress(data, self.compression, self.encoding)
 
         return data
 
@@ -329,7 +336,7 @@ class Advanced:
                 self.encoding = config["encoding"]
 
                 # Step 3: Unpack and load the data.
-                self.__data = json.loads(self._unpack(base64.b64decode(config["data"])).decode(self.encoding))
+                self.__data = json.loads(self._unpack(config["data"]))
                 if self.strict:
                     # Step 4: Verify the checksum if strict.
                     if config["checksum"] != self._generateChecksum(self.__data):
@@ -362,7 +369,7 @@ class Advanced:
         # ? Encrypt
 
         # Step 1: Convert dictionary to JSON.
-        dictionary = json.dumps(self.__data).encode(self.encoding)
+        dictionary: str = json.dumps(self.__data)
 
         # Step 2: Create the JSON data.
         # Step 3: Generate checksum of the data.
@@ -380,12 +387,12 @@ class Advanced:
             },
 
             "checksum": self._generateChecksum(dictionary),
-            "data": base64.b64encode(self._pack(dictionary)).decode(self.encoding)
+            "data": self._pack(dictionary)
         }
 
         with open(self.config_path, "wb") as f:
             # Step 5: Write to file.
-            f.write(json.dumps(to_write).encode())
+            f.write(json.dumps(to_write, indent=4).encode())
 
     def setdefault(self, key: str, default: Any = None) -> Any:
         """
@@ -402,6 +409,19 @@ class Advanced:
             raise ValueError("Key contains invalid characters.")
 
         return self.__data.setdefault(key, default)
+
+    def set(self, key: str, value: str | int | float | bool | None) -> None:
+        """
+        Set the value of <key> to <value>.
+        """
+
+        if not self.__initialized:
+            raise exceptions.ConfigFileNotInitializedError
+
+        if not self._parseKey(key):
+            raise ValueError("Key contains invalid characters.")
+
+        self.__data[key] = value
 
     def get(self, key: str, default: Any = None) -> Any:
         """

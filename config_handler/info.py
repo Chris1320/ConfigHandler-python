@@ -28,7 +28,7 @@ from typing import Final
 
 
 name: Final[str] = "ConfigHandler"
-version: Final[tuple[int, int, int]] = (1, 1, 0)
+version: Final[tuple[int, int, int]] = (1, 2, 0)
 release: Final[str] = "dev"  # `stable`, `beta`, `dev`
 full_ver: Final[str] = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
 title: Final[str] = "{name} v{version}{release_suffix}".format(

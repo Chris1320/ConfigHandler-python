@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import base64
+
 try:
     from Cryptodome import Random
     from Cryptodome.Cipher import AES
@@ -36,7 +38,7 @@ except ModuleNotFoundError:
     available: bool = False  # There is no supported cryptography module available.
 
 
-def encrypt(data: bytes, key: bytes | str) -> bytes:
+def encrypt(data: str, key: bytes | str, encoding: str = "utf-8") -> str:
     """
     Encrypt <data> using <key> as key.
 
@@ -53,10 +55,14 @@ def encrypt(data: bytes, key: bytes | str) -> bytes:
     iv: bytes = Random.new().read(AES.block_size)  # Generate a random 16-bytes initialization vector.
 
     aes = AES.new(key_hash, AES.MODE_CBC, iv=iv)  # Create a new AES object.
-    return salt + iv + aes.encrypt(pad(data, block_size))  # Encrypt the data.
+    return base64.b64encode(  # Encrypt the data.
+        salt + iv + aes.encrypt(
+            pad(data.encode(encoding), block_size)
+        )
+    ).decode(encoding)
 
 
-def decrypt(data: bytes, key: bytes | str) -> bytes:
+def decrypt(data: str, key: bytes | str, encoding: str = "utf-8") -> str:
     """
     Decrypt <data> using <key> as key.
 
@@ -68,12 +74,14 @@ def decrypt(data: bytes, key: bytes | str) -> bytes:
     salt_size = 16
     block_size = AES.block_size
 
-    iv = data[salt_size:salt_size + block_size]  # Get the iv of the ciphertext.
-    salt = data[:salt_size]  # Get the first 16 bytes of the data as the salt used.
-    enc_data = data[salt_size + block_size:]  # Get the encrypted data.
+    decoded_data = base64.b64decode(data)  # Decode the data.
 
-    key_hash : bytes = PBKDF2(key, salt, dkLen=key_size, count=50000)  # type: ignore
+    iv = decoded_data[salt_size:salt_size + block_size]  # Get the iv of the ciphertext.
+    salt = decoded_data[:salt_size]  # Get the first 16 bytes of the data as the salt used.
+    enc_data = decoded_data[salt_size + block_size:]  # Get the encrypted data.
+
+    key_hash: bytes = PBKDF2(key, salt, dkLen=key_size, count=50000)  # type: ignore
 
     aes = AES.new(key_hash, AES.MODE_CBC, iv=iv)
 
-    return unpad(aes.decrypt(enc_data), block_size)
+    return unpad(aes.decrypt(enc_data), block_size).decode(encoding)

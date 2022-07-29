@@ -24,29 +24,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import base64
+
 from config_handler.advanced.compression import lz4
 from config_handler.advanced.compression import zlib
 
 
-def compress(data: bytes, algorithm: str | None) -> bytes:
+def compress(data: str, algorithm: str | None, encoding: str = "utf-8") -> str:
     """
     Compress <data> using <algorithm>.
+    Return the base64-encoded result as a string.
     """
 
     if algorithm is None:
         return data  # Do not modify the data.
 
     elif algorithm == "zlib":
-        return zlib.compress(data)
+        return base64.b64encode(zlib.compress(data.encode(encoding))).decode(encoding)
 
     elif algorithm == "lz4":
-        return lz4.compress(data)
+        return base64.b64encode(lz4.compress(data.encode(encoding))).decode(encoding)
 
     else:
         raise ValueError(f"Unsupported compression algorithm: {algorithm}")
 
 
-def decompress(data: bytes, algorithm: str | None) -> bytes:
+def decompress(data: str, algorithm: str | None, encoding: str = "utf-8") -> str:
     """
     Decompress <data> using <algorithm>.
     """
@@ -55,10 +58,10 @@ def decompress(data: bytes, algorithm: str | None) -> bytes:
         return data
 
     elif algorithm == "zlib":
-        return zlib.decompress(data)
+        return zlib.decompress(base64.b64decode(data)).decode(encoding)
 
     elif algorithm == "lz4":
-        return lz4.decompress(data)
+        return lz4.decompress(base64.b64decode(data)).decode(encoding)
 
     else:
         raise ValueError(f"Unsupported compression algorithm: {algorithm}")

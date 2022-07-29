@@ -95,7 +95,25 @@ class TestAdvancedConfigHandler:
         config.save()  # Save the configuration file.
 
     def testLoadConfig(self):
-        pass
+        config = Advanced(self.advanced_configpath)
+        assert config.exists
+        try:
+            config["test"]
+
+        except exceptions.ConfigFileNotInitializedError:
+            pass
+
+        else:
+            raise AssertionError("ConfigFileNotInitializedError should've been raised.")
+
+        config.load()
+
+        assert config.name == "config_handler.advanced"
+        assert config.author is None
+        assert config["foo"] == "bar"
+        assert config.get("non-existent", "expected_value") == "expected_value"
+        config.set("foo", "bar2")
+        assert config["foo"] == "bar2"
 
     def testCompression(self):
         pass
