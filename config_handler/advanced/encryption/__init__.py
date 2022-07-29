@@ -24,29 +24,52 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import base64
 
-class ChecksumError(Exception):
+from config_handler.advanced.encryption import aes256
+
+
+def encrypt(
+    data: str,
+    algorithm: str | None,
+    key: str | None = None,
+    encoding: str = "utf-8"
+) -> str:
     """
-    Exception raised when the checksum of the dictionary is invalid.
-    """
-
-    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
-        super().__init__(message)
-
-
-class ConfigFileNotInitializedError(Exception):
-    """
-    Exception raised when the configuration file has not yet been initialized.
-    """
-
-    def __init__(self, message: str = "The configuration file has not yet been initialized."):
-        super().__init__(message)
-
-
-class InvalidConfigurationFileError(Exception):
-    """
-    Exception raised when the configuration file is unable to be loaded.
+    Encrypt <data> using <algorithm> as the encryption algorithm and <key> as the key.
     """
 
-    def __init__(self, message: str = "The configuration file is invalid or corrupted."):
-        super().__init__(message)
+    if algorithm is None:
+        return data  # Do not modify the data.
+
+    if key is None:
+        raise ValueError("Configuration password is not set but encryption is on.")
+
+    elif algorithm == "aes256":
+        return aes256.encrypt(data, key, encoding)
+
+    else:
+        raise ValueError(f"Unsupported encryption algorithm: {algorithm}")
+
+
+def decrypt(
+    data: str,
+    algorithm: str | None,
+    key: str | None = None,
+    encoding: str = "utf-8"
+) -> str:
+    """
+    Decrypt <data> using <algorithm> as the encryption algorithm and <key> as the key.
+    """
+
+    if algorithm is None:
+        return data
+
+    if key is None:
+        raise ValueError("Configuration password is not set but encryption is on.")
+
+    if algorithm == "aes256":
+        return aes256.decrypt(data, key, encoding)
+
+    else:
+        raise ValueError(f"Unsupported encryption algorithm: {algorithm}")

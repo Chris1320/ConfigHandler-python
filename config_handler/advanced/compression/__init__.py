@@ -24,29 +24,44 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import base64
 
-class ChecksumError(Exception):
+from config_handler.advanced.compression import lz4
+from config_handler.advanced.compression import zlib
+
+
+def compress(data: str, algorithm: str | None, encoding: str = "utf-8") -> str:
     """
-    Exception raised when the checksum of the dictionary is invalid.
-    """
-
-    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
-        super().__init__(message)
-
-
-class ConfigFileNotInitializedError(Exception):
-    """
-    Exception raised when the configuration file has not yet been initialized.
+    Compress <data> using <algorithm>.
+    Return the base64-encoded result as a string.
     """
 
-    def __init__(self, message: str = "The configuration file has not yet been initialized."):
-        super().__init__(message)
+    if algorithm is None:
+        return data  # Do not modify the data.
+
+    elif algorithm == "zlib":
+        return base64.b64encode(zlib.compress(data.encode(encoding))).decode(encoding)
+
+    elif algorithm == "lz4":
+        return base64.b64encode(lz4.compress(data.encode(encoding))).decode(encoding)
+
+    else:
+        raise ValueError(f"Unsupported compression algorithm: {algorithm}")
 
 
-class InvalidConfigurationFileError(Exception):
+def decompress(data: str, algorithm: str | None, encoding: str = "utf-8") -> str:
     """
-    Exception raised when the configuration file is unable to be loaded.
+    Decompress <data> using <algorithm>.
     """
 
-    def __init__(self, message: str = "The configuration file is invalid or corrupted."):
-        super().__init__(message)
+    if algorithm is None:
+        return data
+
+    elif algorithm == "zlib":
+        return zlib.decompress(base64.b64decode(data)).decode(encoding)
+
+    elif algorithm == "lz4":
+        return lz4.decompress(base64.b64decode(data)).decode(encoding)
+
+    else:
+        raise ValueError(f"Unsupported compression algorithm: {algorithm}")

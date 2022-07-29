@@ -5,6 +5,10 @@ dist/
 build/
 *.egg-info/
 
-# Used as a temporary file when manually testing the package.
-simple_test.conf
-advanced_test.conf
+# pytest and pytest-benchmark files
+.benchmarks/
+.pytest_cache/
+
+# Used as temporary files when testing the package.
+tests_data/simple/*.conf
+tests_data/advanced/*.conf
