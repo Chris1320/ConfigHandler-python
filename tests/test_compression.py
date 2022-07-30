@@ -24,18 +24,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import string
 import random
+import string
 
-from config_handler.advanced import encryption
+from config_handler.advanced import compression
 
-
-class TestAdvancedEncryptions:
-    def testAES256(self):
+class TestAdvancedCompressions:
+    def testZLib(self):
         for _ in range(0, 10):
-            key = ''.join(random.choices(string.ascii_letters, k=random.randint(8, 16)))
             text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
+            compressed = compression.compress(text, "zlib")
+            assert text == compression.decompress(compressed, "zlib")
 
-            ciphertext = encryption.encrypt(text, "aes256", key)
-
-            assert text == encryption.decrypt(ciphertext, "aes256", key)
+    def testLZ4(self):
+        for _ in range(0, 10):
+            text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
+            compressed = compression.compress(text, "lz4")
+            assert text == compression.decompress(compressed, "lz4")
