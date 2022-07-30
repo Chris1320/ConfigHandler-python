@@ -21,7 +21,9 @@ setup(
     classifiers=[  # https://pypi.org/pypi?%3Aaction=list_classifiers
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.7"
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     packages=["config_handler"],
     include_package_data=True,

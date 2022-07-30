@@ -9,7 +9,7 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 
 ## Installation
 
-+ via pip: `pip install py-config-handler`
++ via pip: `pip install confighandler-python`
 + as a Git submodule: `git submodule add https://github.com/Chris1320/ConfigHandler-python.git`
 
 ### Requirements
