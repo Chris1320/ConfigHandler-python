@@ -26,9 +26,23 @@ SOFTWARE.
 
 import base64
 from typing import Union
+from importlib import import_module
 
 from config_handler.advanced.compression import lz4
 from config_handler.advanced.compression import zlib
+
+
+def isAvailable(compression_name: Union[str, None]) -> bool:
+    """
+    Check if <compression_name> is available in the user's machine.
+    """
+
+    if compression_name is None:
+        return True  # This means that no compression is needed.
+
+    parent_import_path = "config_handler.advanced.compression"
+
+    return getattr(import_module(f"{parent_import_path}.{compression_name}"), "available")
 
 
 def compress(data: str, algorithm: Union[str, None], encoding: str = "utf-8") -> str:

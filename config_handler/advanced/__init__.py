@@ -45,7 +45,7 @@ class Advanced:
     This type of configuration file uses the JSON format.
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (2, 0, 0)
+    parser_version: Final[Tuple[int, int, int]] = (2, 1, 0)
     supported_compression: Final[tuple] = (
         None,
         "zlib",
@@ -182,32 +182,40 @@ class Advanced:
         return self._compression
 
     @compression.setter
-    def compression(self, compression: Union[str, None]):
+    def compression(self, compression_name: Union[str, None]):
         """
         Check if the compression algorithm is supported first before setting.
         """
 
-        if compression in self.supported_compression:
-            self._compression = compression
+        if compression_name in self.supported_compression:
+            if compression.isAvailable(compression_name):
+                self._compression = compression_name
+
+            else:
+                raise NotImplementedError(f"The compression feature {compression_name} is not found or unavailable.")
 
         else:
-            raise ValueError(f"Unsupported compression algorithm: {compression}")
+            raise ValueError(f"Unsupported compression algorithm: {compression_name}")
 
     @property
     def encryption(self) -> Union[str, None]:
         return self._encryption
 
     @encryption.setter
-    def encryption(self, encryption: Union[str, None]):
+    def encryption(self, encryption_name: Union[str, None]):
         """
         Check if the encryption algorithm is supported first before setting.
         """
 
-        if encryption in self.supported_encryption:
-            self._encryption = encryption
+        if encryption_name in self.supported_encryption:
+            if encryption.isAvailable(encryption_name):
+                self._encryption = encryption_name
+
+            else:
+                raise NotImplementedError(f"The encryption feature {encryption_name} is not found or unavailable.")
 
         else:
-            raise ValueError(f"Unsupported encryption algorithm: {encryption}")
+            raise ValueError(f"Unsupported encryption algorithm: {encryption_name}")
 
     @property
     def checksum(self) -> str:
