@@ -14,10 +14,10 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, dev ]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ master ]
+    branches: [ master, dev ]
   schedule:
     - cron: '40 11 * * 1'
 
@@ -64,9 +64,6 @@ jobs:
     # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
     #    and modify them (or add more) to build your code if your project
     #    uses a compiled language
-
-    - run: |
-       python test/test.py
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
