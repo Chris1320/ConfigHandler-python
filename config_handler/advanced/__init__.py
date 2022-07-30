@@ -27,7 +27,10 @@ SOFTWARE.
 import os
 import json
 from typing import Any
+from typing import List
 from typing import Final
+from typing import Tuple
+from typing import Union
 from hashlib import blake2b
 
 from config_handler import exceptions
@@ -42,7 +45,7 @@ class Advanced:
     This type of configuration file uses the JSON format.
     """
 
-    parser_version: Final[tuple[int, int, int]] = (2, 0, 0)
+    parser_version: Final[Tuple[int, int, int]] = (2, 0, 0)
     supported_compression: Final[tuple] = (
         None,
         "zlib",
@@ -56,7 +59,7 @@ class Advanced:
     def __init__(
         self,
         config_path: str,
-        config_pass: str | None = None,
+        config_pass: Union[str, None] = None,
         readonly: bool = False,
         strict: bool = False,
         encoding: str = "utf-8"
@@ -100,7 +103,7 @@ class Advanced:
 
         del self.__data[key]
 
-    def __setitem__(self, key: str, value: str | int | float | bool | None) -> None:
+    def __setitem__(self, key: str, value: Union[str, int, float, bool, None]) -> None:
         """
         Set a key-value pair in the configuration file.
 
@@ -116,7 +119,7 @@ class Advanced:
 
         self.__data[key] = value
 
-    def __getitem__(self, key: str) -> str | int | float | bool | None:
+    def __getitem__(self, key: str) -> Union[str, int, float, bool, None]:
         """
         Get the value of <key>.
         """
@@ -175,11 +178,11 @@ class Advanced:
         self._config_path = os.path.abspath(new_path)
 
     @property
-    def compression(self) -> str | None:
+    def compression(self) -> Union[str, None]:
         return self._compression
 
     @compression.setter
-    def compression(self, compression: str | None):
+    def compression(self, compression: Union[str, None]):
         """
         Check if the compression algorithm is supported first before setting.
         """
@@ -191,11 +194,11 @@ class Advanced:
             raise ValueError(f"Unsupported compression algorithm: {compression}")
 
     @property
-    def encryption(self) -> str | None:
+    def encryption(self) -> Union[str, None]:
         return self._encryption
 
     @encryption.setter
-    def encryption(self, encryption: str | None):
+    def encryption(self, encryption: Union[str, None]):
         """
         Check if the encryption algorithm is supported first before setting.
         """
@@ -225,7 +228,7 @@ class Advanced:
 
         return os.path.isfile(self.config_path)
 
-    def _generateChecksum(self, data: str | bytes, digest_size: int = 8) -> str:
+    def _generateChecksum(self, data: Union[str, bytes], digest_size: int = 8) -> str:
         """
         Generate a BLAKE2 hash of <data>.
 
@@ -269,9 +272,9 @@ class Advanced:
     def new(
         self,
         name: str = __name__,
-        author: str | None = None,
-        compression: str | None = None,
-        encryption: str | None = None
+        author: Union[str, None] = None,
+        compression: Union[str, None] = None,
+        encryption: Union[str, None] = None
     ) -> None:
         """
         Create a new configuration file to <self.config_path>.
@@ -410,7 +413,7 @@ class Advanced:
 
         return self.__data.setdefault(key, default)
 
-    def set(self, key: str, value: str | int | float | bool | None) -> None:
+    def set(self, key: str, value: Union[str, int, float, bool, None]) -> None:
         """
         Set the value of <key> to <value>.
         """
@@ -443,7 +446,7 @@ class Advanced:
 
         return self.__data.pop(key, default)
 
-    def popitem(self) -> tuple[str, Any]:
+    def popitem(self) -> Tuple[str, Any]:
         """
         Pop a key-pair value from the configuration file.
         """
@@ -453,7 +456,7 @@ class Advanced:
 
         return self.__data.popitem()
 
-    def items(self) -> list[tuple[str, Any]]:
+    def items(self) -> List[Tuple[str, Any]]:
         """
         Return a list of key-value pairs of the configuration file.
         """
@@ -463,7 +466,7 @@ class Advanced:
 
         return list(self.__data.items())
 
-    def keys(self) -> list[str]:
+    def keys(self) -> List[str]:
         """
         Return existing keys in the configuration file.
         """
@@ -473,7 +476,7 @@ class Advanced:
 
         return list(self.__data.keys())
 
-    def values(self) -> list[Any]:
+    def values(self) -> List[Any]:
         """
         Return a list of values in the configuration file.
         """

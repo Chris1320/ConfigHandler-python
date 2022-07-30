@@ -5,9 +5,10 @@ dist/
 build/
 *.egg-info/
 
-# pytest and pytest-benchmark files
+# pytest, pytest-benchmark, & pytest-cov files
 .benchmarks/
 .pytest_cache/
+.coverage
 
 # Used as temporary files when testing the package.
 tests_data/simple/*.conf

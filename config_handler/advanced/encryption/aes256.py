@@ -25,6 +25,7 @@ SOFTWARE.
 """
 
 import base64
+from typing import Union
 
 try:
     from Cryptodome import Random
@@ -38,7 +39,7 @@ except ModuleNotFoundError:
     available: bool = False  # There is no supported cryptography module available.
 
 
-def encrypt(data: str, key: bytes | str, encoding: str = "utf-8") -> str:
+def encrypt(data: str, key: Union[bytes, str], encoding: str = "utf-8") -> str:
     """
     Encrypt <data> using <key> as key.
 
@@ -62,7 +63,7 @@ def encrypt(data: str, key: bytes | str, encoding: str = "utf-8") -> str:
     ).decode(encoding)
 
 
-def decrypt(data: str, key: bytes | str, encoding: str = "utf-8") -> str:
+def decrypt(data: str, key: Union[bytes, str], encoding: str = "utf-8") -> str:
     """
     Decrypt <data> using <key> as key.
 

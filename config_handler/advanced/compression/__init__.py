@@ -25,12 +25,13 @@ SOFTWARE.
 """
 
 import base64
+from typing import Union
 
 from config_handler.advanced.compression import lz4
 from config_handler.advanced.compression import zlib
 
 
-def compress(data: str, algorithm: str | None, encoding: str = "utf-8") -> str:
+def compress(data: str, algorithm: Union[str, None], encoding: str = "utf-8") -> str:
     """
     Compress <data> using <algorithm>.
     Return the base64-encoded result as a string.
@@ -49,7 +50,7 @@ def compress(data: str, algorithm: str | None, encoding: str = "utf-8") -> str:
         raise ValueError(f"Unsupported compression algorithm: {algorithm}")
 
 
-def decompress(data: str, algorithm: str | None, encoding: str = "utf-8") -> str:
+def decompress(data: str, algorithm: Union[str, None], encoding: str = "utf-8") -> str:
     """
     Decompress <data> using <algorithm>.
     """

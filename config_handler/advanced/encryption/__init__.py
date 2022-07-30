@@ -25,14 +25,15 @@ SOFTWARE.
 """
 
 import base64
+from typing import Union
 
 from config_handler.advanced.encryption import aes256
 
 
 def encrypt(
     data: str,
-    algorithm: str | None,
-    key: str | None = None,
+    algorithm: Union[str, None],
+    key: Union[str, None] = None,
     encoding: str = "utf-8"
 ) -> str:
     """
@@ -54,8 +55,8 @@ def encrypt(
 
 def decrypt(
     data: str,
-    algorithm: str | None,
-    key: str | None = None,
+    algorithm: Union[str, None],
+    key: Union[str, None] = None,
     encoding: str = "utf-8"
 ) -> str:
     """

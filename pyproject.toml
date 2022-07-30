@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--color=yes --code-highlight=yes -vvv"
+addopts = "--cache-clear --color=yes --code-highlight=yes --cov=config_handler -vvv"
 testpaths = [
     "tests"
 ]
