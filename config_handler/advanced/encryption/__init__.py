@@ -25,8 +25,22 @@ SOFTWARE.
 """
 
 from typing import Union
+from importlib import import_module
 
 from config_handler.advanced.encryption import aes256
+
+
+def isAvailable(encryption_name: Union[str, None]) -> bool:
+    """
+    Check if <encryption_name> is available in the user's machine.
+    """
+
+    if encryption_name is None:
+        return True  # This means that no encryption is needed.
+
+    parent_import_path = "config_handler.advanced.encryption"
+
+    return getattr(import_module(f"{parent_import_path}.{encryption_name}"), "available")
 
 
 def encrypt(
