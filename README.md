@@ -72,7 +72,7 @@ The following modules are optional:
 ```
 
 A key can be any string, but must not start with a `#`, include a `=`, or include a `\n`.
-A value can be any string, integer, or float.
+A value can be any string, integer, float, or boolean.
 
 ### Advanced Mode
 
@@ -80,28 +80,28 @@ A value can be any string, integer, or float.
 
 ```python
 
-from config_handler.advanced import Advanced
+    from config_handler.advanced import Advanced
 
-config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
+    config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
 
-config.new(
-    name="Advanced Mode Test",
-    author="Chris1320",
-    compression="zlib",
-    encryption="aes256"
-)
+    config.new(  # Initialize a new configuration file.
+        name="Advanced Mode Test",
+        author="Chris1320",
+        compression="zlib",
+        encryption="aes256"
+    )
 
-# Create a new configuration file by assigning key-value pair.
-config.set("foo", "bar")  # "foo" is the key, "bar" is the value.
-config.set("nums", 123)
-config.set("dec", 3.14)
-config.set("Aboolean", True)
-config.set("unintentional variable!", "unintentional value.")
+    # Add key-value pairs to configuration file.
+    config["foo"] = "bar"  # "foo" is the key, "bar" is the value.
+    config["nums"] = 123
+    config["dec"] = 3.14
+    config["Aboolean"] = True
+    config["unintentional variable!"] = "unintentional value."
 
-# Remove values
-config.remove("unintentional variable!")
+    # Remove values
+    del config["unintentional variable!"]
 
-config.save()  # Save the data to the file.
+    config.save()  # Save the data to the file.
 
 ```
 
@@ -109,21 +109,22 @@ config.save()  # Save the data to the file.
 
 ```python
 
-from config_handler.advanced import Advanced
+    from config_handler.advanced import Advanced
 
-config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
+    config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
 
-# Load the data from the file.
-config.load()
+    # Load the data from the file.
+    config.load()
 
-# Get values from the loaded data.
-config.get("foo")  # "foo" is the key.
+    # Get values from the loaded data.
+    print(config["foo"])  # "foo" is the key.
 
-config.set("foo", "barred")  # Change value of a key.
-config.set("new_key", "new_value")  # Add a new key-value pair.
+    config["foo"] ="barred"  # Change value of a key.
+    config["new_key"] = "new_value"  # Add a new key-value pair.
 
-config.metadata()  # Get metadata of the configuration file.
+    config()  # Get metadata of the configuration file.
+              # This is formerly called as `config.metadata()`.
 
-config.save()  # Save changes
+    config.save()  # Save changes
 
 ```
