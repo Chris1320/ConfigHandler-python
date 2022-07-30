@@ -27,7 +27,10 @@ SOFTWARE.
 import os
 import base64
 from typing import Any
+from typing import List
 from typing import Final
+from typing import Tuple
+from typing import Union
 
 
 class Simple:
@@ -45,7 +48,7 @@ class Simple:
     - Values must not contain a newline (\n).
     """
 
-    parser_version: Final[tuple[int, int, int]] = (0, 3, 0)  # Parser version
+    parser_version: Final[Tuple[int, int, int]] = (0, 3, 0)  # Parser version
     _separator: Final[str] = '='
     _comment_char: Final[str] = '#'
 
@@ -86,7 +89,7 @@ class Simple:
 
         del self.__data[key]
 
-    def __setitem__(self, key: str, value: str | int | float | bool) -> None:
+    def __setitem__(self, key: str, value: Union[str, int, float, bool]) -> None:
         """
         Set a key-value pair in the configuration file.
         Raises a `ValueError` if the key or value has invalid characters.
@@ -103,7 +106,7 @@ class Simple:
 
         self.__data[key] = value
 
-    def __getitem__(self, key: str) -> str | int | float | bool:
+    def __getitem__(self, key: str) -> Union[str, int, float, bool]:
         """
         Get the value of <key>.
         """
@@ -155,7 +158,7 @@ class Simple:
         return os.path.isfile(self.config_path)
 
     @property
-    def _forbidden_key_chars(self) -> tuple[str, ...]:
+    def _forbidden_key_chars(self) -> Tuple[str, ...]:
         return (
             self._separator,
             '\n'
@@ -283,28 +286,28 @@ class Simple:
 
         return self.__data.pop(key, default)
 
-    def popitem(self) -> tuple[str, Any]:
+    def popitem(self) -> Tuple[str, Any]:
         """
         Pop a key-pair value from the configuration file.
         """
 
         return self.__data.popitem()
 
-    def items(self) -> list[tuple[str, Any]]:
+    def items(self) -> List[Tuple[str, Any]]:
         """
         Return a list of key-value pairs of the configuration file.
         """
 
         return list(self.__data.items())
 
-    def keys(self) -> list[str]:
+    def keys(self) -> List[str]:
         """
         Return existing keys in the configuration file.
         """
 
         return list(self.__data.keys())
 
-    def values(self) -> list[Any]:
+    def values(self) -> List[Any]:
         """
         Return a list of values in the configuration file.
         """
