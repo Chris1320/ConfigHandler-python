@@ -48,7 +48,7 @@ class Simple:
     - Values must not contain a newline (\n).
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (0, 3, 0)  # Parser version
+    parser_version: Final[Tuple[int, int, int]] = (0, 4, 0)  # Parser version
     _separator: Final[str] = '='
     _comment_char: Final[str] = '#'
 
@@ -271,6 +271,23 @@ class Simple:
             raise ValueError("Default value contains invalid characters.")
 
         return self.__data.setdefault(key, default)
+
+    def set(self, key: str, value: Union[str, int, float, bool]) -> None:
+        """
+        Set a key-value pair in the configuration file.
+        Raises a `ValueError` if the key or value has invalid characters.
+
+        :param key: The key of the pair.
+        :param value: The value of the key.
+        """
+
+        if not self._parseKey(key):
+            raise ValueError("Key contains invalid characters.")
+
+        if not self._parseValue(value):
+            raise ValueError("Value contains invalid characters.")
+
+        self.__data[key] = value
 
     def get(self, key: str, default: Any = None) -> Any:
         """
