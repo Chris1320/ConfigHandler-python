@@ -26,6 +26,7 @@ SOFTWARE.
 
 import os
 from typing import Any
+from typing import Dict
 from typing import Final
 
 from config_handler import exceptions
@@ -39,7 +40,7 @@ class TestAdvancedConfigHandler:
     bulk_ops_range: Final[int] = 10000
 
     test_password: Final[str] = "test_password"
-    key_value_pairs: Final[dict[str, Any]] = {
+    key_value_pairs: Final[Dict[str, Any]] = {
         "foo": "bar",
         "nums": 123,
         "dec": 3.14,

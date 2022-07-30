@@ -26,6 +26,7 @@ SOFTWARE.
 
 import os
 from typing import Any
+from typing import Dict
 from typing import Final
 
 from config_handler.simple import Simple
@@ -38,14 +39,14 @@ class TestSimpleConfigHandler:
 
     bulk_ops_range: Final[int] = 10000
 
-    key_value_pairs: Final[dict[str, Any]] = {
+    key_value_pairs: Final[Dict[str, Any]] = {
         "foo": "bar",
         "nums": 123,
         "dec": 3.14,
         "Aboolean": True,
         "unintentional variable!": "unintentional value."
     }
-    forbidden_chars_in_key: Final[dict[Any, Any]] = {
+    forbidden_chars_in_key: Final[Dict[Any, Any]] = {
         "=": "equal sign",
         "#": "hash",
         "\n": "newline",
@@ -56,7 +57,7 @@ class TestSimpleConfigHandler:
         3.14: "pi",
         False: "boolean"
     }
-    forbidden_chars_in_value: Final[dict[str, Any]] = {
+    forbidden_chars_in_value: Final[Dict[str, Any]] = {
         "foo": ("b", "a", "r"),
         "newline": "something\nhere"
     }
