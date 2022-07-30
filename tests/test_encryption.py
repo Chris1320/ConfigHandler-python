@@ -32,10 +32,9 @@ from config_handler.advanced import encryption
 
 class TestAdvancedEncryptions:
     def testAES256(self):
-        for _ in range(0, 10):
-            key = ''.join(random.choices(string.ascii_letters, k=random.randint(8, 16)))
-            text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
+        key = ''.join(random.choices(string.ascii_letters, k=random.randint(8, 16)))
+        text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
 
-            ciphertext = encryption.encrypt(text, "aes256", key)
+        ciphertext = encryption.encrypt(text, "aes256", key)
 
-            assert text == encryption.decrypt(ciphertext, "aes256", key)
+        assert text == encryption.decrypt(ciphertext, "aes256", key)
