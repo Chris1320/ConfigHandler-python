@@ -48,7 +48,7 @@ class Simple:
     - Values must not contain a newline (\n).
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (0, 4, 0)  # Parser version
+    parser_version: Final[Tuple[int, int, int]] = (0, 5, 0)  # Parser version
     _separator: Final[str] = '='
     _comment_char: Final[str] = '#'
 
@@ -295,6 +295,13 @@ class Simple:
         """
 
         return self.__data.get(key, default)
+
+    def remove(self, key: str) -> None:
+        """
+        Remove a key from the configuration file.
+        """
+
+        del self.__data[key]
 
     def pop(self, key: str, default: Any = None) -> Any:
         """

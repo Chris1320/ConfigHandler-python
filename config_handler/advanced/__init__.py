@@ -45,7 +45,7 @@ class Advanced:
     This type of configuration file uses the JSON format.
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (2, 1, 0)
+    parser_version: Final[Tuple[int, int, int]] = (2, 2, 0)
     supported_compression: Final[tuple] = (
         None,
         "zlib",
@@ -443,6 +443,13 @@ class Advanced:
             raise exceptions.ConfigFileNotInitializedError
 
         return self.__data.get(key, default)
+
+    def remove(self, key: str) -> None:
+        """
+        Remove a key from the configuration file.
+        """
+
+        del self.__data[key]
 
     def pop(self, key: str, default: Any = None) -> Any:
         """

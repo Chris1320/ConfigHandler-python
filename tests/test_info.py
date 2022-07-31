@@ -24,15 +24,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Final
-from typing import Tuple
+from config_handler import info
 
-name: Final[str] = "ConfigHandler"
-version: Final[Tuple[int, int, int]] = (1, 4, 0)
-release: Final[str] = "dev"  # `stable`, `beta`, `dev`
-full_ver: Final[str] = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
-title: Final[str] = "{name} v{version}{release_suffix}".format(
-    name = name,
-    version = '.'.join(map(str, version)),
-    release_suffix = "" if release == "stable" else f"-{release}"
-)
+
+def testConfigHandlerInfo():
+    assert type(info.name) is str
+    assert type(info.version) is tuple
+    assert len(info.version) == 3
+    assert info.release in ("stable", "beta", "dev")
