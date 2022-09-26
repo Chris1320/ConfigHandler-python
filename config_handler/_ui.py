@@ -25,20 +25,85 @@ SOFTWARE.
 """
 
 import os
+import shutil
 import textwrap
 from typing import Dict
-from typing import List
 from typing import Union
 
 from config_handler import info
 
 
-def _clearScreen() -> None:
+def clearScreen() -> None:
     """
     Clears the screen.
     """
 
     os.system("cls" if os.name == "nt" else "clear")
+
+
+def confirm(message: str = "Press enter to continue...") -> None:
+    """
+    Wait for user input.
+
+    :param message: The message to show to the user.
+    """
+
+    input(message)
+
+
+class InputBox:
+    """
+    Show an input box to the user and return their input.
+    """
+
+    def __init__(
+        self,
+        title: str = info.title,
+        description: Union[str, None] = None,
+        margin: int = 4,
+        title_fill_char: str = ' ',
+        clear_screen: bool = True
+    ):
+        """
+        Initialize the InputBox() class.
+
+        :param title: The title of the input box. (default: <info.title>)
+        :param description: The description of the input box. (default: None)
+        :param margin: The margin of the description. (default: 4)
+        :param title_fill_char: The characater to fill the sides of the title with. (default: ' ')
+        :param clear_screen: Whether or not to clear the screen before showing the dialog. (default: True)
+        """
+
+        self.title = title
+        self.description = description
+        self.margin = margin
+        self.title_fill_char = title_fill_char
+        self.clear_screen = clear_screen
+
+    def __call__(self) -> str:
+        """
+        Show the dialog to the user and return their input.
+
+        :returns str: The input of the user.
+        """
+
+        while True:
+            if self.clear_screen:
+                clearScreen()
+
+            print()
+            print(self.title.center(shutil.get_terminal_size().columns, self.title_fill_char))
+            print()
+            if self.description is not None:
+                for line in textwrap.wrap(
+                    self.description,
+                    shutil.get_terminal_size().columns - (self.margin * 2)
+                ):
+                    print(line.center(shutil.get_terminal_size().columns))
+
+                print()
+
+            return input(" >>> ")
 
 
 class Choices:
@@ -48,7 +113,7 @@ class Choices:
 
     def __init__(
         self,
-        list_of_choices: Dict[Union[str, None], Union[str, None]],
+        list_of_choices: Dict[str, str],
         title: str = info.title,
         description: Union[str, None] = None,
         minimum_spaces: int = 1,
@@ -84,22 +149,24 @@ class Choices:
     def __call__(self) -> str:
         """
         Show the dialog to the user and return the choice they make.
+
+        :returns str: The choice the user made.
         """
 
         while True:
             if self.clear_screen:
-                _clearScreen()
+                clearScreen()
 
             print()
-            print(self.title.center(os.get_terminal_size().columns, self.title_fill_char))  # Print the title.
+            print(self.title.center(shutil.get_terminal_size().columns, self.title_fill_char))  # Print the title.
             print()
             if self.description is not None:
                 # Print the description.
                 for line in textwrap.wrap(
                     self.description,
-                    os.get_terminal_size().columns - (self.margin * 2)
+                    shutil.get_terminal_size().columns - (self.margin * 2)
                 ):
-                    print(line.center(os.get_terminal_size().columns))
+                    print(line.center(shutil.get_terminal_size().columns))
 
                 print()
 
@@ -108,12 +175,8 @@ class Choices:
                 for key in self._list_of_choices.keys()
             )
             for id, description in self._list_of_choices.items():  # Print the choices.
-                if id is None and description is None:
-                    print()
-
-                else:
-                    spacer = ' ' * (self.minimum_spaces + (longest_id - len(str(id))))
-                    print(f"[{id}]{spacer}{description}")
+                spacer = ' ' * (self.minimum_spaces + (longest_id - len(str(id))))
+                print(f"[{id}]{spacer}{description}")
 
             print()
             choice = input(" >>> ")  # Get the user's choice.
@@ -125,10 +188,10 @@ class Choices:
                     continue
 
             else:
-                if choice.lower() in map(
-                    lambda x: x.lower() if type(x) is str else x,  # Convert the keys to lowercase ONLY IF the key is a string.
-                    self._list_of_choices.keys()
-                ):
+                if choice.lower() in [  # Convert the keys to lowercase ONLY IF the key is a string.
+                    key.lower() if type(key) is str else key
+                    for key in self._list_of_choices.keys()
+                ]:
                     return choice
 
                 else:
@@ -136,18 +199,16 @@ class Choices:
 
 
     @property
-    def list_of_choices(self) -> Dict[Union[str, None], Union[str, None]]:
+    def list_of_choices(self) -> Dict[str, str]:
         return self._list_of_choices
 
     @list_of_choices.setter
-    def list_of_choices(self, new_list: Dict[Union[str, None], Union[str, None]]) -> None:
+    def list_of_choices(self, new_list: Dict[str, str]) -> None:
         """
         Check if the new list of choices is valid.
         Raises a ValueError if any of the pairs are invalid.
         """
 
-        for key, value in new_list.items():
-            if any((key, value)) is None and all((key, value)) is not None:
-                raise ValueError("Invalid choice.")
+        # TODO
 
         self._list_of_choices = new_list
