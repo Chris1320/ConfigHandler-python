@@ -43,10 +43,9 @@ class Main:
         print()
         print(info.title)
         print()
-        print(f"Program Version: v{'.'.join([str(v) for v in info.version])}")
-        print(f"Program Release: {info.release}")
-        print()
-        print(f"Current Working Directory: `{os.getcwd()}`")
+        print(f"Program Version:           v{'.'.join([str(v) for v in info.version])}")
+        print(f"Program Release:           {info.release}")
+        print(f"Current Working Directory: {os.getcwd()}")
         print()
 
     def createNewConfig(self) -> None:
@@ -54,11 +53,40 @@ class Main:
         Create a new configuration file.
         """
 
-        config_path = _ui.InputBox(
-            title = "Create A New Configuration File",
-            description = "Please enter the filepath of the new configuration file."
-            # WIP
-        )
+        # Ask for the filepath of the new configuration file.
+        while True:
+            try:
+                config_path: str = _ui.InputBox(
+                    title = "Create A New Configuration File",
+                    description = "Please enter the filepath of the new configuration file. CTRL+C to cancel."
+                )()
+                if _ui.Choices(
+                    list_of_choices = {
+                        'y': "Yes",
+                        'n': "No"
+                    },
+                    description = f"Is this correct? `{config_path}`",
+                    case_sensitive = False
+                )() == 'y':
+                    break
+
+                else:
+                    continue
+
+            except (KeyboardInterrupt, EOFError):
+                return  # Cancel configuration file creation.
+
+        # Ask for the type of the new configuration file.
+        config_type: str = _ui.Choices(
+            list_of_choices = {
+                '1': "Simple Configuration File",
+                '2': "Advanced Configuration File",
+                '99': "Cancel"
+            }
+        )()
+
+        if config_type == '99':
+            return  # Cancel configuration file creation.
 
     def main(self) -> int:
         while True:
@@ -97,8 +125,16 @@ class Main:
                     print("THIS SHOULD NOT HAPPEN!") # DEV0005: This is temporary.
                     _ui.confirm()
 
-            except KeyboardInterrupt:
-                continue  # Ignore CTRL+C
+            except (KeyboardInterrupt, EOFError):
+                print("\nForce exiting...")
+                sys.exit(2)
+
+            except Exception as e:
+                print("[CRITICAL] An unhandled exception occured:")
+                print()
+                print(e)
+                print()
+                return 1
 
 
 if __name__ == "__main__":
