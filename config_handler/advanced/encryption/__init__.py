@@ -27,6 +27,7 @@ SOFTWARE.
 from typing import Union
 from importlib import import_module
 
+from config_handler import info
 from config_handler.advanced.encryption import aes256
 
 
@@ -47,7 +48,7 @@ def encrypt(
     data: str,
     algorithm: Union[str, None],
     key: Union[str, None] = None,
-    encoding: str = "utf-8"
+    encoding: str = info.defaults["encoding"]
 ) -> str:
     """
     Encrypt <data> using <algorithm> as the encryption algorithm and <key> as the key.
@@ -70,7 +71,7 @@ def decrypt(
     data: str,
     algorithm: Union[str, None],
     key: Union[str, None] = None,
-    encoding: str = "utf-8"
+    encoding: str = info.defaults["encoding"]
 ) -> str:
     """
     Decrypt <data> using <algorithm> as the encryption algorithm and <key> as the key.

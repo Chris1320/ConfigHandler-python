@@ -88,6 +88,40 @@ class Main:
         if config_type == '99':
             return  # Cancel configuration file creation.
 
+        elif config_type == '1':
+            config_opts = {
+                "base64": False,
+                "encoding": info.defaults["encoding"]
+            }
+            while True:
+                _ui.clearScreen()
+                config_opts_action: str = _ui.Choices(
+                    list_of_choices = {
+                        '1': f"Encode to Base64 (Current: {config_opts['base64']})",
+                        '2': f"Set encoding     (Current: {config_opts['encoding']})",
+                        "98": "Cancel",
+                        "99": "Create Configuration File"
+                    },
+                    description = "Set configuration file options",
+                    case_sensitive = False
+                )()
+
+                if config_opts_action == "98":
+                    return  # Cancel configuration file creation.
+
+                elif config_opts_action == '1':
+                    config_opts["base64"] = not config_opts["base64"]
+
+                elif config_opts_action == '2':
+                    new_conf_encoding: str = _ui.InputBox(
+                        title = "Enter new encoding to use",
+                        description = f"Leave blank for default. ({info.defaults['encoding']})"
+                    )().replace(' ', '')
+                    config_opts["encoding"] = info.defaults["encoding"] if new_conf_encoding == '' else new_conf_encoding
+
+                elif config_opts_action == "99":
+                    print("Creating new configuration file...")
+
     def main(self) -> int:
         while True:
             try:
@@ -130,9 +164,7 @@ class Main:
                 sys.exit(2)
 
             except Exception as e:
-                print("[CRITICAL] An unhandled exception occured:")
-                print()
-                print(e)
+                print(f"[CRITICAL] An unhandled exception occured: {e}")
                 print()
                 return 1
 

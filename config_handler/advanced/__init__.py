@@ -33,6 +33,7 @@ from typing import Tuple
 from typing import Union
 from hashlib import blake2b
 
+from config_handler import info
 from config_handler import exceptions
 from config_handler.advanced import encryption
 from config_handler.advanced import compression
@@ -62,14 +63,14 @@ class Advanced:
         config_pass: Union[str, None] = None,
         readonly: bool = False,
         strict: bool = False,
-        encoding: str = "utf-8"
+        encoding: str = info.defaults["encoding"]
     ):
         """
         :param config_path: The path of the configuration file to open or create.
         :param config_pass: The configuration file encryption password. (Default: `None`)
         :param readonly: True if the configuration file is read-only. (Default: `False`)
         :param strict: True to check the checksum of the configuration file. (Default: `False`)
-        :param encoding: The encoding to use. (Default: `utf-8`)
+        :param encoding: The encoding to use. (Default: `info.defaults["encoding"]`)
 
         Read-only mode allows manipulation but not writing to the configuration file.
         """

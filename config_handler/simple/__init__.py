@@ -32,6 +32,8 @@ from typing import Final
 from typing import Tuple
 from typing import Union
 
+from config_handler import info
+
 
 class Simple:
     r"""
@@ -57,7 +59,7 @@ class Simple:
         config_path: str,
         isbase64: bool = False,
         readonly: bool = False,
-        encoding: str = "utf-8"
+        encoding: str = info.defaults["encoding"]
     ):
         """
         :param config_path: The path of the configuration file to open or create.
