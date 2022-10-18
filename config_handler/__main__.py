@@ -33,6 +33,8 @@ from config_handler import _ui
 from config_handler import info
 from config_handler import simple
 from config_handler import advanced
+from config_handler.advanced import encryption as adv_encryption
+from config_handler.advanced import compression as adv_compression
 
 def showProgramInformation() -> None:
     """
@@ -85,7 +87,7 @@ def createNewConfig() -> None:
                 },
                 description = f"Is this correct? `{config_path}`",
                 case_sensitive = False
-            )() == 'y':
+            )().lower() == 'y':
                 break
 
             else:
@@ -151,7 +153,6 @@ def createNewConfig() -> None:
 
     elif config_type == '2':
         config_opts = {
-            "password_protected": False,
             "encoding": info.defaults["encoding"],
             "name": "New Configuration File",
             # Author is defined below
@@ -162,17 +163,16 @@ def createNewConfig() -> None:
             config_opts["author"] = getuser()
 
         except Exception:  # I don't think it is documented what is the exact exception raised. See line 167 of `getpass.py`
-            config_opts["author"] = ""
+            config_opts["author"] = None
 
         while True:
             _ui.clearScreen()
             list_of_choices = {
-                '1': f"Toggle password protection    (Current: {config_opts['password_protected']})",
-                '2': f"Set encoding                  (Current: {config_opts['encoding']})",
-                '3': f"Set configuration file name   (Current: {config_opts['name']})",
-                '4': f"Set configuration file author (Current: {config_opts['author']})",
-                '5': f"Set compression               (Current: {config_opts['compression']})",
-                '6': f"Set encryption                (Current: {config_opts['encryption']})",
+                '1': f"Set encoding                  (Current: {config_opts['encoding']})",
+                '2': f"Set configuration file name   (Current: {config_opts['name']})",
+                '3': f"Set configuration file author (Current: {config_opts['author']})",
+                '4': f"Set compression               (Current: {config_opts['compression']})",
+                '5': f"Set encryption                (Current: {config_opts['encryption']})",
                 "98": "Cancel",
                 "99": "Create Configuration File"
             }
@@ -187,22 +187,19 @@ def createNewConfig() -> None:
                 return
 
             elif config_opts_action == '1':
-                config_opts["password_protected"] = not config_opts["password_protected"]
-
-            elif config_opts_action == '2':
                 new_conf_encoding: str = _ui.InputBox(
                     title = "Enter new encoding to use",
                     description = f"Leave blank for default. ({info.defaults['encoding']})"
                 )().replace(' ', '')
                 config_opts["encoding"] = info.defaults["encoding"] if new_conf_encoding == '' else new_conf_encoding
 
-            elif config_opts_action == '3':
+            elif config_opts_action == '2':
                 config_opts["name"] = _ui.InputBox(title="Enter Configuration File Name")()
 
-            elif config_opts_action == '4':
+            elif config_opts_action == '3':
                 config_opts["author"] = _ui.InputBox(title="Enter Configuration File Author")()
 
-            elif config_opts_action == '5':
+            elif config_opts_action == '4':
                 # Create a dictionary containing a list of supported compression algorithms.
                 supported_compression: dict = {}
                 i = 1
@@ -210,7 +207,7 @@ def createNewConfig() -> None:
                     supported_compression[str(i)] = compression
                     i += 1
 
-                config_opts["compression"] = supported_compression[
+                new_conf_compression: str = supported_compression[
                     _ui.Choices(
                         list_of_choices = supported_compression,
                         title = "Choose Compression to Use",
@@ -218,8 +215,14 @@ def createNewConfig() -> None:
                         case_sensitive = False
                     )()
                 ]
+                if adv_compression.isAvailable(new_conf_compression):
+                    config_opts["compression"] = new_conf_compression
 
-            elif config_opts_action == '6':
+                else:
+                    print("[E] The selected compression is not available.")
+                    input("    Press enter to continue...")
+
+            elif config_opts_action == '5':
                 # Create a dictionary containing a list of supported encryption algorithms
                 supported_encryption: dict = {}
                 i = 1
@@ -227,7 +230,7 @@ def createNewConfig() -> None:
                     supported_encryption[str(i)] = encryption
                     i += 1
 
-                config_opts["encryption"] = supported_encryption[
+                new_conf_encryption = supported_encryption[
                     _ui.Choices(
                         list_of_choices = supported_encryption,
                         title = "Choose Encryption to Use",
@@ -235,12 +238,18 @@ def createNewConfig() -> None:
                         case_sensitive = False
                     )()
                 ]
+                if adv_encryption.isAvailable(new_conf_encryption):
+                    config_opts["encryption"] = new_conf_encryption
+
+                else:
+                    print("[E] The selected encryption is not available.")
+                    input("    Press enter to continue...")
 
             elif config_opts_action == "99":
                 print("Creating new configuration file...")
                 new_advanced_config = advanced.Advanced(
                     config_path = config_path,
-                    config_pass = getConfigurationFilePassword() if config_opts["password_protected"] else None,
+                    config_pass = getConfigurationFilePassword() if config_opts["encryption"] is not None else None,
                     encoding = config_opts["encoding"]
                 )
                 new_advanced_config.new(
@@ -251,11 +260,15 @@ def createNewConfig() -> None:
                 )
                 try:
                     new_advanced_config.save()
-                    return
 
                 except ValueError as e:
                     print(f"[ERROR] {e}")
                     input("Press enter to continue...")
+
+                else:
+                    print("Done!")
+                    input("Press enter to continue...")
+                    return
 
 def main() -> int:
     """
