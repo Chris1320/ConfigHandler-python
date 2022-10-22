@@ -220,7 +220,7 @@ def createNewConfig() -> None:
 
                 else:
                     print("[E] The selected compression is not available.")
-                    input("    Press enter to continue...")
+                    _ui.confirm()
 
             elif config_opts_action == '5':
                 # Create a dictionary containing a list of supported encryption algorithms
@@ -243,7 +243,7 @@ def createNewConfig() -> None:
 
                 else:
                     print("[E] The selected encryption is not available.")
-                    input("    Press enter to continue...")
+                    _ui.confirm()
 
             elif config_opts_action == "99":
                 print("Creating new configuration file...")
@@ -263,11 +263,11 @@ def createNewConfig() -> None:
 
                 except ValueError as e:
                     print(f"[ERROR] {e}")
-                    input("Press enter to continue...")
+                    _ui.confirm()
 
                 else:
                     print("Done!")
-                    input("Press enter to continue...")
+                    _ui.confirm()
                     return
 
 def main() -> int:
