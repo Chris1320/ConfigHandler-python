@@ -36,6 +36,7 @@ from config_handler import advanced
 from config_handler.advanced import encryption as adv_encryption
 from config_handler.advanced import compression as adv_compression
 
+
 def showProgramInformation() -> None:
     """
     Show the program information.
@@ -48,6 +49,7 @@ def showProgramInformation() -> None:
     print(f"Program Release:           {info.release}")
     print(f"Current Working Directory: {os.getcwd()}")
     print()
+
 
 def getConfigurationFilePassword(
     prompt: str = "Enter configuration file password: ",
@@ -67,6 +69,7 @@ def getConfigurationFilePassword(
         else:
             print("[E] Passwords do not match.")
             continue
+
 
 def createNewConfig() -> None:
     """
@@ -270,6 +273,7 @@ def createNewConfig() -> None:
                     _ui.confirm()
                     return
 
+
 def main() -> int:
     """
     The main function of the program.
@@ -310,7 +314,7 @@ def main() -> int:
                 _ui.confirm()
 
             else:
-                print("THIS SHOULD NOT HAPPEN!") # DEV0005: This is temporary.
+                print("THIS SHOULD NOT HAPPEN!")  # DEV0005: This is temporary.
                 _ui.confirm()
 
         except (KeyboardInterrupt, EOFError):
