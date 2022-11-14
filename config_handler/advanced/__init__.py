@@ -46,7 +46,7 @@ class Advanced:
     This type of configuration file uses the JSON format.
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (2, 3, 0)
+    parser_version: Final[Tuple[int, int, int]] = (2, 3, 1)
     supported_compression: Final[tuple] = (
         None,
         "zlib",
@@ -259,7 +259,7 @@ class Advanced:
     def _checkOldConfigVersion(
         self,
         version_to_check: Tuple[int, int, int],
-        reference_version: Tuple[int, int, int] | None = None
+        reference_version: Union[Tuple[int, int, int], None] = None
     ) -> Tuple[int, int]:
         """
         Check if the given version number is newer or older than the current
