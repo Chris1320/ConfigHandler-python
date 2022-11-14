@@ -276,13 +276,13 @@ class Advanced:
             reference_version = self.parser_version
 
         if reference_version[0] != version_to_check[0]:  # Check major
-            return (0, reference_version[0] - version_to_check[0])
+            return (0, version_to_check[0] - reference_version[0])
 
         elif reference_version[1] != version_to_check[1]:  # Check minor
-            return (1, reference_version[1] - version_to_check[1])
+            return (1, version_to_check[1] - reference_version[1])
 
         elif reference_version[2] != version_to_check[2]:  # Check patch
-            return (2, reference_version[2] - version_to_check[2])
+            return (2, version_to_check[2] - reference_version[2])
 
         return (0, 0)
 
