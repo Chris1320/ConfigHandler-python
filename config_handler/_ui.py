@@ -70,8 +70,8 @@ class InputBox:
         :param title: The title of the input box. (default: <info.title>)
         :param description: The description of the input box. (default: None)
         :param margin: The margin of the description. (default: 4)
-        :param title_fill_char: The characater to fill the sides of the title with. (default: ' ')
-        :param clear_screen: Whether or not to clear the screen before showing the dialog. (default: True)
+        :param title_fill_char: The character to fill the sides of the title with. (default: ' ')
+        :param clear_screen: Whether to clear the screen before showing the dialog. (default: True)
         """
 
         self.title = title
@@ -84,7 +84,7 @@ class InputBox:
         """
         Show the dialog to the user and return their input.
 
-        :returns str: The input of the user.
+        :returns: The input of the user.
         """
 
         while True:
@@ -131,11 +131,11 @@ class Choices:
         :param minimum_spaces: The minimum number of spaces between the ID and description. (default: 1)
         :param margin: The margin of the description. (default: 4)
         :param title_fill_char: The character to fill the sides of the title with. (default: ' ')
-        :param clear_screen: Whether or not to clear the screen before showing the dialog. (default: True)
-        :param case_sensitive: Whether or not to ignore case when comparing the user's input to the IDs. (default: False)
+        :param clear_screen: Whether to clear the screen before showing the dialog. (default: True)
+        :param case_sensitive: Whether to ignore case when comparing the user's input to the IDs. (default: False)
         """
 
-        self._list_of_choices = list_of_choices
+        self.list_of_choices = list_of_choices
 
         self.title = title
         self.description = description
@@ -150,7 +150,7 @@ class Choices:
         """
         Show the dialog to the user and return the choice they make.
 
-        :returns str: The choice the user made.
+        :returns: The choice the user made.
         """
 
         while True:
@@ -172,43 +172,21 @@ class Choices:
 
             longest_id = max(  # Get the longest key.
                 (len(key) if key is not None else 0)
-                for key in self._list_of_choices.keys()
+                for key in self.list_of_choices.keys()
             )
-            for id, description in self._list_of_choices.items():  # Print the choices.
-                spacer = ' ' * (self.minimum_spaces + (longest_id - len(str(id))))
-                print(f"[{id}]{spacer}{description}")
+            for choice_id, choice_description in self.list_of_choices.items():  # Print the choices.
+                spacer = ' ' * (self.minimum_spaces + (longest_id - len(str(choice_id))))
+                print(f"[{choice_id}]{spacer}{choice_description}")
 
             print()
             choice = input(" >>> ")  # Get the user's choice.
             if self.case_sensitive:
-                if choice in self._list_of_choices.keys():
+                if choice in self.list_of_choices.keys():
                     return choice
-
-                else:
-                    continue
 
             else:
                 if choice.lower() in [  # Convert the keys to lowercase ONLY IF the key is a string.
                     key.lower() if type(key) is str else key
-                    for key in self._list_of_choices.keys()
+                    for key in self.list_of_choices.keys()
                 ]:
                     return choice
-
-                else:
-                    continue
-
-
-    @property
-    def list_of_choices(self) -> Dict[str, str]:
-        return self._list_of_choices
-
-    @list_of_choices.setter
-    def list_of_choices(self, new_list: Dict[str, str]) -> None:
-        """
-        Check if the new list of choices is valid.
-        Raises a ValueError if any of the pairs are invalid.
-        """
-
-        # TODO
-
-        self._list_of_choices = new_list

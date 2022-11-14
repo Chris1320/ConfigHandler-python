@@ -30,8 +30,8 @@ from typing import Final
 from typing import Tuple
 
 name: Final[str] = "ConfigHandler"
-version: Final[Tuple[int, int, int]] = (1, 5, 0)
-release: Final[str] = "dev"  # `stable`, `beta`, `dev`
+version: Final[Tuple[int, int, int]] = (1, 6, 0)
+release: Final[str] = "beta"  # `stable`, `beta`, `dev`
 full_ver: Final[str] = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
 title: Final[str] = "{name} v{version}{release_suffix}".format(
     name = name,

@@ -26,6 +26,8 @@ SOFTWARE.
 
 import os
 import sys
+import shlex
+from typing import Final
 from getpass import getpass
 from getpass import getuser
 
@@ -35,6 +37,16 @@ from config_handler import simple
 from config_handler import advanced
 from config_handler.advanced import encryption as adv_encryption
 from config_handler.advanced import compression as adv_compression
+
+
+try:
+    import prettytable
+
+except ImportError:
+    PRETTYTABLE_SUPPORT: Final[bool] = False
+
+else:
+    PRETTYTABLE_SUPPORT: Final[bool] = True
 
 
 def showProgramInformation() -> None:
@@ -99,179 +111,375 @@ def createNewConfig() -> None:
         except (KeyboardInterrupt, EOFError):
             return  # Cancel configuration file creation.
 
-    # Ask for the type of the new configuration file.
-    config_type: str = _ui.Choices(
-        list_of_choices = {
-            '1': "Simple Configuration File",
-            '2': "Advanced Configuration File",
-            '99': "Cancel"
-        }
-    )()
+    while True:
+        # Ask for the type of the new configuration file.
+        config_type: str = _ui.Choices(
+            list_of_choices = {
+                '1': "Simple Configuration File",
+                '2': "Advanced Configuration File",
+                '99': "Cancel"
+            }
+        )()
 
-    if config_type == '99':
-        return  # Cancel configuration file creation.
+        if config_type == '99':
+            return  # Cancel configuration file creation.
 
-    elif config_type == '1':
-        config_opts = {
-            "base64": False,
-            "encoding": info.defaults["encoding"]
-        }
-        while True:
-            _ui.clearScreen()
-            config_opts_action: str = _ui.Choices(
+        elif config_type == '1':
+            config_opts = {
+                "base64": False,
+                "encoding": info.defaults["encoding"]
+            }
+            while True:
+                _ui.clearScreen()
+                config_opts_action: str = _ui.Choices(
+                    list_of_choices = {
+                        '1': f"Encode to Base64 (Current: {config_opts['base64']})",
+                        '2': f"Set encoding     (Current: {config_opts['encoding']})",
+                        "98": "Cancel",
+                        "99": "Create Configuration File"
+                    },
+                    description = "Set configuration file options",
+                    case_sensitive = False
+                )()
+
+                if config_opts_action == "98":
+                    return  # Cancel configuration file creation.
+
+                elif config_opts_action == '1':
+                    config_opts["base64"] = not config_opts["base64"]
+
+                elif config_opts_action == '2':
+                    new_conf_encoding: str = _ui.InputBox(
+                        title = "Enter new encoding to use",
+                        description = f"Leave blank for default. ({info.defaults['encoding']})"
+                    )().replace(' ', '')
+                    config_opts["encoding"] = info.defaults["encoding"] if new_conf_encoding == '' else new_conf_encoding
+
+                elif config_opts_action == "99":
+                    print("Creating new configuration file...")
+                    simple.Simple(
+                        config_path = config_path,
+                        isbase64 = config_opts["base64"],
+                        encoding = config_opts["encoding"]
+                    ).save()
+                    return
+
+                else:
+                    continue
+
+        elif config_type == '2':
+            config_opts = {
+                "encoding": info.defaults["encoding"],
+                "name": "New Configuration File",
+                # Author is defined below
+                "compression": None,
+                "encryption": None
+            }
+            try:
+                config_opts["author"] = getuser()
+
+            except Exception:  # I don't think it is documented what is the exact exception raised. See line 167 of `getpass.py`
+                config_opts["author"] = None
+
+            while True:
+                _ui.clearScreen()
                 list_of_choices = {
-                    '1': f"Encode to Base64 (Current: {config_opts['base64']})",
-                    '2': f"Set encoding     (Current: {config_opts['encoding']})",
+                    '1': f"Set encoding                  (Current: {config_opts['encoding']})",
+                    '2': f"Set configuration file name   (Current: {config_opts['name']})",
+                    '3': f"Set configuration file author (Current: {config_opts['author']})",
+                    '4': f"Set compression               (Current: {config_opts['compression']})",
+                    '5': f"Set encryption                (Current: {config_opts['encryption']})",
                     "98": "Cancel",
                     "99": "Create Configuration File"
-                },
-                description = "Set configuration file options",
-                case_sensitive = False
+                }
+
+                config_opts_action: str = _ui.Choices(
+                    list_of_choices = list_of_choices,
+                    description = "Set configuration file options",
+                    case_sensitive = False
+                )()
+
+                if config_opts_action == "98":
+                    return
+
+                elif config_opts_action == '1':
+                    new_conf_encoding: str = _ui.InputBox(
+                        title = "Enter new encoding to use",
+                        description = f"Leave blank for default. ({info.defaults['encoding']})"
+                    )().replace(' ', '')
+                    config_opts["encoding"] = info.defaults["encoding"] if new_conf_encoding == '' else new_conf_encoding
+
+                elif config_opts_action == '2':
+                    config_opts["name"] = _ui.InputBox(title="Enter Configuration File Name")()
+
+                elif config_opts_action == '3':
+                    config_opts["author"] = _ui.InputBox(title="Enter Configuration File Author")()
+
+                elif config_opts_action == '4':
+                    # Create a dictionary containing a list of supported compression algorithms.
+                    supported_compression: dict = {}
+                    i = 1
+                    for compression in advanced.Advanced.supported_compression:
+                        supported_compression[str(i)] = compression
+                        i += 1
+
+                    new_conf_compression: str = supported_compression[
+                        _ui.Choices(
+                            list_of_choices = supported_compression,
+                            title = "Choose Compression to Use",
+                            clear_screen = True,
+                            case_sensitive = False
+                        )()
+                    ]
+                    if adv_compression.isAvailable(new_conf_compression):
+                        config_opts["compression"] = new_conf_compression
+
+                    else:
+                        print("[E] The selected compression is not available.")
+                        _ui.confirm()
+
+                elif config_opts_action == '5':
+                    # Create a dictionary containing a list of supported encryption algorithms
+                    supported_encryption: dict = {}
+                    i = 1
+                    for encryption in advanced.Advanced.supported_encryption:
+                        supported_encryption[str(i)] = encryption
+                        i += 1
+
+                    new_conf_encryption = supported_encryption[
+                        _ui.Choices(
+                            list_of_choices = supported_encryption,
+                            title = "Choose Encryption to Use",
+                            clear_screen = True,
+                            case_sensitive = False
+                        )()
+                    ]
+                    if adv_encryption.isAvailable(new_conf_encryption):
+                        config_opts["encryption"] = new_conf_encryption
+
+                    else:
+                        print("[E] The selected encryption is not available.")
+                        _ui.confirm()
+
+                elif config_opts_action == "99":
+                    print("Creating new configuration file...")
+                    new_advanced_config = advanced.Advanced(
+                        config_path = config_path,
+                        config_pass = getConfigurationFilePassword() if config_opts["encryption"] is not None else None,
+                        encoding = config_opts["encoding"]
+                    )
+                    new_advanced_config.new(
+                        name = config_opts["name"],
+                        author = config_opts["author"],
+                        compression = config_opts["compression"],
+                        encryption = config_opts["encryption"]
+                    )
+                    try:
+                        new_advanced_config.save()
+
+                    except ValueError as e:
+                        print(f"[ERROR] {e}")
+                        _ui.confirm()
+
+                    else:
+                        print("Done!")
+                        _ui.confirm()
+                        return
+
+
+def openConfig() -> None:
+    """
+    Open an existing configuration file.
+    """
+
+    while True:
+        try:
+            config_path: str = _ui.InputBox(
+                title = "Open an Existing Configuration File",
+                description = "Please enter the filepath of an existing configuration file. CTRL+C to cancel."
             )()
-
-            if config_opts_action == "98":
-                return  # Cancel configuration file creation.
-
-            elif config_opts_action == '1':
-                config_opts["base64"] = not config_opts["base64"]
-
-            elif config_opts_action == '2':
-                new_conf_encoding: str = _ui.InputBox(
-                    title = "Enter new encoding to use",
-                    description = f"Leave blank for default. ({info.defaults['encoding']})"
-                )().replace(' ', '')
-                config_opts["encoding"] = info.defaults["encoding"] if new_conf_encoding == '' else new_conf_encoding
-
-            elif config_opts_action == "99":
-                print("Creating new configuration file...")
-                simple.Simple(
-                    config_path = config_path,
-                    isbase64 = config_opts["base64"],
-                    encoding = config_opts["encoding"]
-                ).save()
-                return
+            if _ui.Choices(
+                list_of_choices = {
+                    'y': "Yes",
+                    'n': "No"
+                },
+                description = f"Is this correct? `{config_path}`",
+                case_sensitive = False
+            )().lower() == 'y':
+                break
 
             else:
                 continue
 
-    elif config_type == '2':
-        config_opts = {
-            "encoding": info.defaults["encoding"],
-            "name": "New Configuration File",
-            # Author is defined below
-            "compression": None,
-            "encryption": None
-        }
+        except (KeyboardInterrupt, EOFError):
+            return
+
+    while True:
         try:
-            config_opts["author"] = getuser()
-
-        except Exception:  # I don't think it is documented what is the exact exception raised. See line 167 of `getpass.py`
-            config_opts["author"] = None
-
-        while True:
-            _ui.clearScreen()
-            list_of_choices = {
-                '1': f"Set encoding                  (Current: {config_opts['encoding']})",
-                '2': f"Set configuration file name   (Current: {config_opts['name']})",
-                '3': f"Set configuration file author (Current: {config_opts['author']})",
-                '4': f"Set compression               (Current: {config_opts['compression']})",
-                '5': f"Set encryption                (Current: {config_opts['encryption']})",
-                "98": "Cancel",
-                "99": "Create Configuration File"
-            }
-
-            config_opts_action: str = _ui.Choices(
-                list_of_choices = list_of_choices,
-                description = "Set configuration file options",
-                case_sensitive = False
+            config_type: str = _ui.Choices(
+                list_of_choices = {
+                    '1': "Simple Configuration File",
+                    '2': "Advanced Configuration File",
+                    "99": "Cancel"
+                }
             )()
 
-            if config_opts_action == "98":
+            if config_type == '1':
+                openSimpleConfig(config_path)
                 return
 
-            elif config_opts_action == '1':
-                new_conf_encoding: str = _ui.InputBox(
-                    title = "Enter new encoding to use",
-                    description = f"Leave blank for default. ({info.defaults['encoding']})"
-                )().replace(' ', '')
-                config_opts["encoding"] = info.defaults["encoding"] if new_conf_encoding == '' else new_conf_encoding
+            elif config_type == '2':
+                openAdvancedConfig(config_path)
+                return
 
-            elif config_opts_action == '2':
-                config_opts["name"] = _ui.InputBox(title="Enter Configuration File Name")()
+            elif config_type == "99":
+                return
 
-            elif config_opts_action == '3':
-                config_opts["author"] = _ui.InputBox(title="Enter Configuration File Author")()
+        except (KeyboardInterrupt, EOFError):
+            return
 
-            elif config_opts_action == '4':
-                # Create a dictionary containing a list of supported compression algorithms.
-                supported_compression: dict = {}
-                i = 1
-                for compression in advanced.Advanced.supported_compression:
-                    supported_compression[str(i)] = compression
-                    i += 1
 
-                new_conf_compression: str = supported_compression[
-                    _ui.Choices(
-                        list_of_choices = supported_compression,
-                        title = "Choose Compression to Use",
-                        clear_screen = True,
-                        case_sensitive = False
-                    )()
-                ]
-                if adv_compression.isAvailable(new_conf_compression):
-                    config_opts["compression"] = new_conf_compression
+def openSimpleConfig(config_path: str) -> None:
+    """
+    Open a simple configuration file.
+    """
 
-                else:
-                    print("[E] The selected compression is not available.")
-                    _ui.confirm()
+    config_opts = {
+        "isbase64": False,
+        "readonly": False,
+        "command_mode": False,
+        "encoding": info.defaults["encoding"]
+    }
+    while True:  # Show options menu first.
+        choice = _ui.Choices(
+            list_of_choices = {
+                '1': f"Toggle base64 encoding (Current: {config_opts['isbase64']})",
+                '2': f"Toggle read-only mode (Current: {config_opts['readonly']})",
+                '3': f"Set encoding ({config_opts['encoding']})",
+                "97": "Cancel",
+                "98": "Open Configuration File in Command Mode",
+                "99": "Open Configuration File"
+            }
+        )()
 
-            elif config_opts_action == '5':
-                # Create a dictionary containing a list of supported encryption algorithms
-                supported_encryption: dict = {}
-                i = 1
-                for encryption in advanced.Advanced.supported_encryption:
-                    supported_encryption[str(i)] = encryption
-                    i += 1
+        if choice == "97":
+            return
 
-                new_conf_encryption = supported_encryption[
-                    _ui.Choices(
-                        list_of_choices = supported_encryption,
-                        title = "Choose Encryption to Use",
-                        clear_screen = True,
-                        case_sensitive = False
-                    )()
-                ]
-                if adv_encryption.isAvailable(new_conf_encryption):
-                    config_opts["encryption"] = new_conf_encryption
+        elif choice == '1':
+            config_opts["isbase64"] = not config_opts["isbase64"]
 
-                else:
-                    print("[E] The selected encryption is not available.")
-                    _ui.confirm()
+        elif choice == '2':
+            config_opts["readonly"] = not config_opts["readonly"]
 
-            elif config_opts_action == "99":
-                print("Creating new configuration file...")
-                new_advanced_config = advanced.Advanced(
-                    config_path = config_path,
-                    config_pass = getConfigurationFilePassword() if config_opts["encryption"] is not None else None,
-                    encoding = config_opts["encoding"]
-                )
-                new_advanced_config.new(
-                    name = config_opts["name"],
-                    author = config_opts["author"],
-                    compression = config_opts["compression"],
-                    encryption = config_opts["encryption"]
-                )
+        elif choice == '3':
+            new_conf_encoding: str = _ui.InputBox(
+                title = "Enter new encoding to use",
+                description = f"Leave blank for default. ({info.defaults['encoding']})"
+            )().replace(' ', '')
+            config_opts["encoding"] = info.defaults["encoding"] if new_conf_encoding == '' else new_conf_encoding
+
+        elif choice == "98":
+            config_opts["command_mode"] = True
+            break
+
+        elif choice == "99":
+            break
+
+    # ? Attempt to open configuration file.
+    try:
+        conf = simple.Simple(
+            config_path = config_path,
+            isbase64 = config_opts["isbase64"],
+            readonly = config_opts["readonly"],
+            encoding = config_opts["encoding"]
+        )
+
+    except Exception as e:
+        print(f"[ERROR] Cannot open configuration file: {e}")
+        _ui.confirm()
+        return
+
+    else:
+        _ui.clearScreen()
+        if config_opts["command_mode"]:
+            for k, v in conf().items():
+                print(f"{k}: {v}")
+
+            print()
+            print("[i] Type `help` for more information. Type `quit` to exit.")
+            print()
+            help_menu = """Available Commands:
+
+load                     Load the configuration file.
+save                     Save the configuration file.
+info                     Show information about the configuration file.
+
+get <key>                Get the value of a key.
+set <key> <value>        Set the value of a key.
+list                     List all existing key/value pairs in the configuration file.
+
+quit                     Close the configuration file.
+help                     Show this help menu."""
+            while True:
                 try:
-                    new_advanced_config.save()
+                    command = shlex.split(input(" >>> "))
 
-                except ValueError as e:
+                    if command[0] == "quit":
+                        return
+
+                    elif command[0] == "help":
+                        print()
+                        print(help_menu)
+                        print()
+
+                    elif command[0] == "load":
+                        conf.load()
+
+                    elif command[0] == "save":
+                        conf.save()
+
+                    elif command[0] == "info":
+                        if PRETTYTABLE_SUPPORT:
+                            conf_info = prettytable.PrettyTable(title = info.title)
+                            conf_info.add_rows((conf().items()))
+                            print(conf_info)
+
+                        else:
+                            print(info.title)
+                            print()
+                            for k, v in conf().items():
+                                print(f"{k}: {v}")
+
+                            print()
+
+                    elif command[0] == "get":
+                        print(conf[command[1]])
+
+                    elif command[0] == "set":
+                        conf[command[1]] = command[2]
+
+                    elif command[0] == "list":
+                        if PRETTYTABLE_SUPPORT:
+                            conf_items = prettytable.PrettyTable(("Key", "Value"))
+                            for k, v in conf.items():
+                                conf_items.add_row((k, v))
+
+                            print(conf_items)
+
+                        else:
+                            print("Key: Value")
+                            print()
+                            for k, v in conf.items():
+                                print(f"- {k}: {v}")
+
+                except Exception as e:
                     print(f"[ERROR] {e}")
-                    _ui.confirm()
 
-                else:
-                    print("Done!")
-                    _ui.confirm()
-                    return
+
+def openAdvancedConfig(config_path: str) -> None:
+    """
+    Open an advanced configuration file.
+    """
 
 
 def main() -> int:
@@ -300,14 +508,10 @@ def main() -> int:
                 return 0
 
             elif menu_action == 1:
-                _ui.confirm()
+                openConfig()
 
             elif menu_action == 2:
                 createNewConfig()
-
-            elif menu_action == 3:
-                print("Settings")
-                _ui.confirm()
 
             elif menu_action == 98:
                 showProgramInformation()
@@ -322,7 +526,7 @@ def main() -> int:
             sys.exit(2)
 
         except Exception as e:
-            print(f"[CRITICAL] An unhandled exception occured: {e}")
+            print(f"[CRITICAL] An unhandled exception occurred: {e}")
             print()
             return 1
 

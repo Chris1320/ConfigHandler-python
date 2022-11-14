@@ -50,7 +50,7 @@ class Simple:
     - Values must not contain a newline (\n).
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (0, 5, 0)  # Parser version
+    parser_version: Final[Tuple[int, int, int]] = (0, 5, 1)  # Parser version
     _separator: Final[str] = '='
     _comment_char: Final[str] = '#'
 
@@ -183,7 +183,8 @@ class Simple:
         else:
             return True
 
-    def _parseValue(self, value: Any) -> bool:
+    @staticmethod
+    def _parseValue(value: Any) -> bool:
         """
         Check if the value is valid.
         """

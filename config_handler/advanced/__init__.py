@@ -46,7 +46,7 @@ class Advanced:
     This type of configuration file uses the JSON format.
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (2, 2, 0)
+    parser_version: Final[Tuple[int, int, int]] = (2, 3, 0)
     supported_compression: Final[tuple] = (
         None,
         "zlib",
@@ -62,18 +62,23 @@ class Advanced:
         config_path: str,
         config_pass: Union[str, None] = None,
         readonly: bool = False,
-        strict: bool = False,
+        strict: bool = True,
         encoding: str = info.defaults["encoding"]
     ):
         """
         :param config_path: The path of the configuration file to open or create.
         :param config_pass: The configuration file encryption password. (Default: `None`)
         :param readonly: True if the configuration file is read-only. (Default: `False`)
-        :param strict: True to check the checksum of the configuration file. (Default: `False`)
+        :param strict: True to check the checksum of the configuration file. (Default: `True`)
         :param encoding: The encoding to use. (Default: `info.defaults["encoding"]`)
 
         Read-only mode allows manipulation but not writing to the configuration file.
         """
+
+        self._compression = None
+        self._encryption = None
+        self.author = None
+        self.name = None
 
         self.config_path = config_path
         self.readonly = readonly
@@ -227,7 +232,7 @@ class Advanced:
         if not self.__initialized:
             raise exceptions.ConfigFileNotInitializedError
 
-        return self._generateChecksum(json.dumps(self.__data).encode(self.encoding))
+        return self._generateChecksum(self._pack(json.dumps(self.__data)))
 
     @property
     def exists(self) -> bool:
@@ -251,7 +256,38 @@ class Advanced:
 
         return blake2b(data, digest_size=digest_size).hexdigest()  # type: ignore
 
-    def _parseKey(self, key: str) -> bool:
+    def _checkOldConfigVersion(
+        self,
+        version_to_check: Tuple[int, int, int],
+        reference_version: Tuple[int, int, int] | None = None
+    ) -> Tuple[int, int]:
+        """
+        Check if the given version number is newer or older than the current
+        version of ConfigHandler.
+
+        :param version_to_check: The version to check.
+        :param reference_version: The version to compare <version_to_check> to. (Default: self.parser_version)
+
+        :returns: The difference between the two versions. (<version type>, <version difference>)
+                  If the versions are the same, the method will return `(0,0)`.
+        """
+
+        if reference_version is None:
+            reference_version = self.parser_version
+
+        if reference_version[0] != version_to_check[0]:  # Check major
+            return (0, reference_version[0] - version_to_check[0])
+
+        elif reference_version[1] != version_to_check[1]:  # Check minor
+            return (1, reference_version[1] - version_to_check[1])
+
+        elif reference_version[2] != version_to_check[2]:  # Check patch
+            return (2, reference_version[2] - version_to_check[2])
+
+        return (0, 0)
+
+    @staticmethod
+    def _parseKey(key: str) -> bool:
         """
         Check if the key is valid.
         """
@@ -351,8 +387,15 @@ class Advanced:
                 self.__data = json.loads(self._unpack(config["data"]))
                 if self.strict:
                     # Step 4: Verify the checksum if strict.
-                    if config["checksum"] != self._generateChecksum(self.__data):
-                        raise exceptions.ChecksumError
+                    if self._checkOldConfigVersion(config["parser"]["version"], (2, 3, 0))[1] < 0:
+                        if config["checksum"] != self._generateChecksum(json.dumps(self.__data).encode(self.encoding)):
+                            # Perform old method of generating checksum if config file is created with old ConfigHandler.
+                            # NOTE: Support will be removed in the next major release.
+                            raise exceptions.ChecksumError
+
+                    else:
+                        if config["checksum"] != self._generateChecksum(config["data"]):
+                            raise exceptions.ChecksumError
 
             except KeyError:
                 raise exceptions.InvalidConfigurationFileError
@@ -381,7 +424,7 @@ class Advanced:
         # ? Encrypt
 
         # Step 1: Convert dictionary to JSON.
-        dictionary: str = json.dumps(self.__data)
+        dictionary: str = self._pack(json.dumps(self.__data))
 
         # Step 2: Create the JSON data.
         # Step 3: Generate checksum of the data.
@@ -399,12 +442,12 @@ class Advanced:
             },
 
             "checksum": self._generateChecksum(dictionary),
-            "data": self._pack(dictionary)
+            "data": dictionary
         }
 
         with open(self.config_path, "wb") as f:
             # Step 5: Write to file.
-            f.write(json.dumps(to_write, indent=4).encode())
+            f.write(json.dumps(to_write).encode())
 
     def setdefault(self, key: str, default: Any = None) -> Any:
         """

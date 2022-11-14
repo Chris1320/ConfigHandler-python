@@ -29,6 +29,7 @@ import string
 
 from config_handler.advanced import compression
 
+
 class TestAdvancedCompressions:
     def testZLib(self):
         for _ in range(0, 10):
