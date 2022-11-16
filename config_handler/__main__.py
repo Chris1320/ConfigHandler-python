@@ -290,6 +290,10 @@ def createNewConfig() -> None:
 def openConfig() -> None:
     """
     Open an existing configuration file.
+
+    This function only asks the user for the filepath and
+    the config kind (simple or advanced) and calls another
+    function for that kind of configuration file.
     """
 
     while True:
@@ -411,7 +415,7 @@ def openSimpleConfig(config_path: str) -> None:
             help_menu = """Available Commands:
 
 load                     Load the configuration file.
-save                     Save the configuration file.
+save [as]                Save the configuration file. If `as` is added as an argument, ask for a new filepath.
 info                     Show information about the configuration file.
 
 get <key>                Get the value of a key.
@@ -436,7 +440,41 @@ help                     Show this help menu."""
                         conf.load()
 
                     elif command[0] == "save":
-                        conf.save()
+                        try:
+                            if command[1] == "as":
+                                while True:
+                                    new_config_filepath = _ui.InputBox(
+                                        title = f"{info.title} (Save As)",
+                                        description = "Enter a new filepath. Press CTRL+C to cancel."
+                                    )()
+
+                                    # Check if file exists
+                                    if not os.path.isfile(new_config_filepath):
+                                        conf.config_path = new_config_filepath
+                                        conf.save()
+                                        break
+
+                                    else:
+                                        # Ask permission for overwrite
+                                        if _ui.Choices(
+                                            list_of_choices = {'Y': "Yes", 'N': "No"},
+                                            title = f"{info.title} (Save As)",
+                                            description = "A file with the same name already exists. Do you want to continue?"
+                                        )().lower() == 'y':
+                                            conf.config_path = new_config_filepath
+                                            conf.save()
+                                            break
+
+                                        continue  # If no, ask for new filename.
+
+                            else:
+                                conf.save()
+
+                        except IndexError:
+                            conf.save()  # Save modifications to file. (no `as` argument)
+
+                        except KeyboardInterrupt:
+                            pass
 
                     elif command[0] == "info":
                         if PRETTYTABLE_SUPPORT:
@@ -471,6 +509,8 @@ help                     Show this help menu."""
                             print()
                             for k, v in conf.items():
                                 print(f"- {k}: {v}")
+
+                            print()
 
                 except Exception as e:
                     print(f"[ERROR] {e}")
