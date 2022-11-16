@@ -24,21 +24,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any
-from typing import Dict
-from typing import Final
-from typing import Tuple
+import os
+from getpass import getpass
 
-name: Final[str] = "ConfigHandler"
-version: Final[Tuple[int, int, int]] = (1, 7, 0)
-release: Final[str] = "beta"  # `stable`, `beta`, `dev`
-full_ver: Final[str] = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
-title: Final[str] = "{name} v{version}{release_suffix}".format(
-    name = name,
-    version = '.'.join(map(str, version)),
-    release_suffix = "" if release == "stable" else f"-{release}"
-)
+from config_handler import info
 
-defaults: Dict[str, Any] = {
-    "encoding": "utf-8"
-}
+
+def showProgramInformation() -> None:
+    """
+    Show the program information.
+    """
+
+    print()
+    print(info.title)
+    print()
+    print(f"Program Version:           v{'.'.join([str(v) for v in info.version])}")
+    print(f"Program Release:           {info.release}")
+    print(f"Current Working Directory: {os.getcwd()}")
+    print()
+
+
+def getConfigurationFilePassword(
+    prompt: str = "Enter configuration file password: ",
+    confirmation_prompt: str = "Re-enter configuration file password: "
+) -> str:
+    """
+    Ask the user for the configuration file password.
+    """
+
+    # ? https://security.stackexchange.com/questions/29019/are-passwords-stored-in-memory-safe
+    while True:
+        first_input: str = getpass(prompt)
+        confirm_input: str = getpass(confirmation_prompt)
+        if first_input == confirm_input:
+            return confirm_input
+
+        else:
+            print("[E] Passwords do not match.")
+            continue
