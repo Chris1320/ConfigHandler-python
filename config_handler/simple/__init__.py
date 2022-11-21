@@ -210,6 +210,7 @@ class Simple:
         will be overwritten.
         """
 
+        self.__data = {}
         # Open in `rb` mode if self.isbase64 is True.
         with open(self.config_path, "rb" if self.isbase64 else 'r') as f:
             # Decode from Base64 if self.base64 is True.

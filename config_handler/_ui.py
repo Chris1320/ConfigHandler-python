@@ -62,7 +62,8 @@ class InputBox:
         description: Union[str, None] = None,
         margin: int = 4,
         title_fill_char: str = ' ',
-        clear_screen: bool = True
+        clear_screen: bool = True,
+        input_prompt: str = " >>> "
     ):
         """
         Initialize the InputBox() class.
@@ -72,6 +73,7 @@ class InputBox:
         :param margin: The margin of the description. (default: 4)
         :param title_fill_char: The character to fill the sides of the title with. (default: ' ')
         :param clear_screen: Whether to clear the screen before showing the dialog. (default: True)
+        :param input_prompt: The prompt to show beside the user's input field. (default: " >>> ")
         """
 
         self.title = title
@@ -79,6 +81,7 @@ class InputBox:
         self.margin = margin
         self.title_fill_char = title_fill_char
         self.clear_screen = clear_screen
+        self.input_prompt = input_prompt
 
     def __call__(self) -> str:
         """
@@ -87,23 +90,41 @@ class InputBox:
         :returns: The input of the user.
         """
 
-        while True:
-            if self.clear_screen:
-                clearScreen()
+        if self.clear_screen:
+            clearScreen()
 
-            print()
-            print(self.title.center(shutil.get_terminal_size().columns, self.title_fill_char))
-            print()
-            if self.description is not None:
-                for line in textwrap.wrap(
-                    self.description,
-                    shutil.get_terminal_size().columns - (self.margin * 2)
-                ):
-                    print(line.center(shutil.get_terminal_size().columns))
+        print(self.__buildDialog())
+        return input(self.input_prompt)
 
-                print()
+    def __str__(self) -> str:
+        """
+        Get a string representation of the dialog.
+        This will not clear the screen nor ask for the user's input.
 
-            return input(" >>> ")
+        :returns: The string representation of the dialog.
+        """
+
+        return self.__buildDialog()
+
+    def __buildDialog(self) -> str:
+        """
+        Build the dialog.
+
+        :returns: The dialog.
+        """
+
+        # Center and add the title.
+        result: str = f"\n{self.title.center(shutil.get_terminal_size().columns, self.title_fill_char)}\n\n"
+        if self.description is not None:  # Center and add the description.
+            for line in textwrap.wrap(
+                self.description,
+                shutil.get_terminal_size().columns - (self.margin * 2)
+            ):
+                result += f"{line.center(shutil.get_terminal_size().columns)}\n"
+
+            result += '\n'
+
+        return result
 
 
 class Choices:
@@ -120,7 +141,8 @@ class Choices:
         margin: int = 4,
         title_fill_char: str = ' ',
         clear_screen: bool = True,
-        case_sensitive: bool = False
+        case_sensitive: bool = False,
+        input_prompt: str = " >>> "
     ):
         """
         Initialize the Choice() class.
@@ -133,6 +155,7 @@ class Choices:
         :param title_fill_char: The character to fill the sides of the title with. (default: ' ')
         :param clear_screen: Whether to clear the screen before showing the dialog. (default: True)
         :param case_sensitive: Whether to ignore case when comparing the user's input to the IDs. (default: False)
+        :param input_prompt: The prompt to show beside the user's input field. (default: " >>> ")
         """
 
         self.list_of_choices = list_of_choices
@@ -145,6 +168,7 @@ class Choices:
         self.title_fill_char = title_fill_char
         self.clear_screen = clear_screen
         self.case_sensitive = case_sensitive
+        self.input_prompt = input_prompt
 
     def __call__(self) -> str:
         """
@@ -157,29 +181,8 @@ class Choices:
             if self.clear_screen:
                 clearScreen()
 
-            print()
-            print(self.title.center(shutil.get_terminal_size().columns, self.title_fill_char))  # Print the title.
-            print()
-            if self.description is not None:
-                # Print the description.
-                for line in textwrap.wrap(
-                    self.description,
-                    shutil.get_terminal_size().columns - (self.margin * 2)
-                ):
-                    print(line.center(shutil.get_terminal_size().columns))
-
-                print()
-
-            longest_id = max(  # Get the longest key.
-                (len(key) if key is not None else 0)
-                for key in self.list_of_choices.keys()
-            )
-            for choice_id, choice_description in self.list_of_choices.items():  # Print the choices.
-                spacer = ' ' * (self.minimum_spaces + (longest_id - len(str(choice_id))))
-                print(f"[{choice_id}]{spacer}{choice_description}")
-
-            print()
-            choice = input(" >>> ")  # Get the user's choice.
+            print(self.__buildDialog())
+            choice = input(self.input_prompt)  # Get the user's choice.
             if self.case_sensitive:
                 if choice in self.list_of_choices.keys():
                     return choice
@@ -190,3 +193,54 @@ class Choices:
                     for key in self.list_of_choices.keys()
                 ]:
                     return choice
+
+    def __str__(self) -> str:
+        """
+        Get a string representation of the dialog.
+        This will not clear the screen nor ask for the user's input.
+
+        :returns: The string representation of the dialog.
+        """
+
+        return self.__buildDialog()
+
+    def __buildDialog(self) -> str:
+        """
+        Build the dialog.
+        """
+
+        # Center and add title.
+        result: str = f"\n{self.title.center(shutil.get_terminal_size().columns, self.title_fill_char)}\n\n"
+
+        if self.description is not None:  # Center and add description.
+            for line in textwrap.wrap(
+                self.description,
+                shutil.get_terminal_size().columns - (self.margin * 2)
+            ):
+                result += f"{line.center(shutil.get_terminal_size().columns)}\n"
+
+            result += '\n'
+
+        result += self.getChoicesList()
+        result += '\n'
+        return result
+
+    def getChoicesList(self) -> str:
+        """
+        Return a string containing the formatted choices list without the title and description.
+        """
+
+        result: str = ""
+
+        # Get the longest key; to be used in formatting the choices.
+        longest_id = max(
+            (len(key) if key is not None else 0)
+            for key in self.list_of_choices.keys()
+        )
+
+        # Format and add choices to result.
+        for choice_id, choice_description in self.list_of_choices.items():
+            spacer = ' ' * (self.minimum_spaces + (longest_id - len(str(choice_id))))
+            result += f"[{choice_id}]{spacer}{choice_description}\n"
+
+        return result
