@@ -116,11 +116,12 @@ class InputBox:
         # Center and add the title.
         result: str = f"\n{self.title.center(shutil.get_terminal_size().columns, self.title_fill_char)}\n\n"
         if self.description is not None:  # Center and add the description.
-            for line in textwrap.wrap(
-                self.description,
-                shutil.get_terminal_size().columns - (self.margin * 2)
-            ):
-                result += f"{line.center(shutil.get_terminal_size().columns)}\n"
+            for desc_line in self.description.split('\n'):
+                for line in textwrap.wrap(
+                    desc_line,
+                    shutil.get_terminal_size().columns - (self.margin * 2)
+                ):
+                    result += f"{line.center(shutil.get_terminal_size().columns)}\n"
 
             result += '\n'
 
@@ -213,11 +214,12 @@ class Choices:
         result: str = f"\n{self.title.center(shutil.get_terminal_size().columns, self.title_fill_char)}\n\n"
 
         if self.description is not None:  # Center and add description.
-            for line in textwrap.wrap(
-                self.description,
-                shutil.get_terminal_size().columns - (self.margin * 2)
-            ):
-                result += f"{line.center(shutil.get_terminal_size().columns)}\n"
+            for desc_line in self.description.split('\n'):
+                for line in textwrap.wrap(
+                    desc_line,
+                    shutil.get_terminal_size().columns - (self.margin * 2)
+                ):
+                    result += f"{line.center(shutil.get_terminal_size().columns)}\n"
 
             result += '\n'
 

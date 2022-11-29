@@ -25,7 +25,6 @@ SOFTWARE.
 """
 
 import sys
-from typing import Final
 
 from config_handler import _ui
 from config_handler._interactive import utils

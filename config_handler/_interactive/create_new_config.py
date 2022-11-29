@@ -32,7 +32,7 @@ from config_handler import simple
 from config_handler import advanced
 from config_handler.advanced import encryption as adv_encryption
 from config_handler.advanced import compression as adv_compression
-from config_handler._interactive.utils import getConfigurationFilePassword
+from config_handler._interactive import utils
 
 
 def createNewConfig() -> None:
@@ -67,16 +67,16 @@ def createNewConfig() -> None:
         # Ask for the type of the new configuration file.
         config_type: str = _ui.Choices(
             list_of_choices = {
-                '1': "Simple Configuration File",
-                '2': "Advanced Configuration File",
-                '99': "Cancel"
+                'S': "Simple Configuration File",
+                'A': "Advanced Configuration File",
+                'C': "Cancel"
             }
-        )()
+        )().lower()
 
-        if config_type == '99':
+        if config_type == 'c':
             return  # Cancel configuration file creation.
 
-        elif config_type == '1':
+        elif config_type == 's':
             config_opts = {
                 "base64": False,
                 "encoding": info.defaults["encoding"]
@@ -85,41 +85,38 @@ def createNewConfig() -> None:
                 _ui.clearScreen()
                 config_opts_action: str = _ui.Choices(
                     list_of_choices = {
-                        '1': f"Encode to Base64 (Current: {config_opts['base64']})",
-                        '2': f"Set encoding     (Current: {config_opts['encoding']})",
-                        "98": "Cancel",
-                        "99": "Create Configuration File"
+                        'B': f"Encode to Base64 (Current: {config_opts['base64']})",
+                        'E': f"Set encoding     (Current: {config_opts['encoding']})",
+                        'C': "Cancel",
+                        'N': "Create Configuration File"
                     },
-                    description = "Set configuration file options",
-                    case_sensitive = False
-                )()
+                    description = "Set configuration file options"
+                )().lower()
 
-                if config_opts_action == "98":
+                if config_opts_action == 'c':
                     return  # Cancel configuration file creation.
 
-                elif config_opts_action == '1':
+                elif config_opts_action == 'b':
                     config_opts["base64"] = not config_opts["base64"]
 
-                elif config_opts_action == '2':
+                elif config_opts_action == 'e':
                     new_conf_encoding: str = _ui.InputBox(
                         title = "Enter new encoding to use",
                         description = f"Leave blank for default. ({info.defaults['encoding']})"
                     )().replace(' ', '')
                     config_opts["encoding"] = info.defaults["encoding"] if new_conf_encoding == '' else new_conf_encoding
 
-                elif config_opts_action == "99":
-                    print("Creating new configuration file...")
+                elif config_opts_action == 'n':
                     simple.Simple(
                         config_path = config_path,
                         isbase64 = config_opts["base64"],
                         encoding = config_opts["encoding"]
                     ).save()
+                    print("[i] New configuration file created...")
+                    _ui.confirm()
                     return
 
-                else:
-                    continue
-
-        elif config_type == '2':
+        elif config_type == 'a':
             config_opts = {
                 "encoding": info.defaults["encoding"],
                 "name": "New Configuration File",
@@ -141,17 +138,16 @@ def createNewConfig() -> None:
                     '3': f"Set configuration file author (Current: {config_opts['author']})",
                     '4': f"Set compression               (Current: {config_opts['compression']})",
                     '5': f"Set encryption                (Current: {config_opts['encryption']})",
-                    "98": "Cancel",
-                    "99": "Create Configuration File"
+                    "C": "Cancel",
+                    "N": "Create Configuration File"
                 }
 
                 config_opts_action: str = _ui.Choices(
                     list_of_choices = list_of_choices,
-                    description = "Set configuration file options",
-                    case_sensitive = False
-                )()
+                    description = "Set configuration file options"
+                )().lower()
 
-                if config_opts_action == "98":
+                if config_opts_action == 'c':
                     return
 
                 elif config_opts_action == '1':
@@ -213,11 +209,11 @@ def createNewConfig() -> None:
                         print("[E] The selected encryption is not available.")
                         _ui.confirm()
 
-                elif config_opts_action == "99":
+                elif config_opts_action == 'N':
                     print("Creating new configuration file...")
                     new_advanced_config = advanced.Advanced(
                         config_path = config_path,
-                        config_pass = getConfigurationFilePassword() if config_opts["encryption"] is not None else None,
+                        config_pass = utils.getConfigurationFilePassword() if config_opts["encryption"] is not None else None,
                         encoding = config_opts["encoding"]
                     )
                     new_advanced_config.new(

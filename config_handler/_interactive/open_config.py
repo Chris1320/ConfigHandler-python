@@ -26,107 +26,180 @@ SOFTWARE.
 
 import os
 import shlex
-import shutil
-from typing import Dict
+from typing import Any
 from typing import Final
-from typing import Union
 
 from config_handler import _ui
 from config_handler import info
 from config_handler.simple import Simple
-from config_handler.advanced import Advanced
-
 
 try:
     import prettytable
 
 except ImportError:
-    PRETTYTABLE_SUPPORT: Final[bool] = False
+    _PRETTYTABLE_SUPPORT: Final[bool] = False
 
 else:
-    PRETTYTABLE_SUPPORT: Final[bool] = True
+    _PRETTYTABLE_SUPPORT: Final[bool] = True
+
+_VALUE_TYPES: Final = {
+    str: "String",
+    int: "Integer",
+    float: "Float",
+    bool: "Boolean"
+}
+
+
+def parseValue(value: str) -> Any:
+    """
+    Check if user explicitly states a value type and convert if necessary.
+    This function raises a ValueError if it is unable to convert the value.
+
+    :param value: The value to check for conversion.
+    """
+
+    if type(value) is not str:
+        return value  # Do not do anything with <value> if it is not a string.
+        # ? We will still accept non-string datatypes because values can also be an int, float, or bool.
+
+    if value.startswith("str:"):
+        return str(value.partition("str:")[2])
+
+    elif value.startswith("int:"):
+        return int(value.partition("int:")[2])
+
+    elif value.startswith("float:"):
+        return float(value.partition("float:")[2])
+
+    elif value.startswith("bool:"):
+        parsed_bool = value.partition("bool:")[2].lower()
+        if parsed_bool in {"true", "false"}:
+            return parsed_bool == "true"
+
+        elif parsed_bool.isdigit():  # This will accept any positive integers. (0-n)
+            return int(parsed_bool) != 0  # 0 is False; True otherwise.
+
+        else:
+            raise ValueError("Invalid value for a boolean value datatype.")
+
+    else:
+        return value  # Do not do anything with value if none of the above are true.
 
 
 class SimpleConfigManager:
     def __init__(self, config_path: str):
         """
         The initialization method of SimpleConfigManager() class.
-
         This class handles interactions between the user and ConfigHandler.
 
         :param config_path: The path to the configuration file to open.
         """
 
-        self.conf: Union[Simple, None] = None
         self.config_path = config_path
-        self.config_opts = {
-            "prompt": " >>> ",
-            "isbase64": False,
-            "readonly": False,
-            "command_mode": False,
-            "encoding": info.defaults["encoding"],
-            "browser_items_to_show": info.defaults["browser_items_to_show"]
-        }
+        self.command_mode = False
+        self.prompt = " >>> "
+        self.browser_items_to_show = info.defaults["browser_items_to_show"]
+        self.conf = Simple(
+            config_path=self.config_path,
+            isbase64=False,
+            readonly=False,
+            encoding=info.defaults["encoding"]
+        )
+        self.do_not_reload = False
+        self.exit = False
 
-    def settings(self) -> None:
+    def __call__(self) -> None:
+        """
+        Start interactive session with the configuration file.
+        """
+
+        self.settings(True)  # Ask user for settings before creating a new Simple() object.
+        while not self.exit:
+            if self.command_mode:
+                self.startCommandMode()
+
+            else:
+                self.start()
+
+    def settings(self, open_wizard: bool = False) -> None:
         """
         Let the user configure the manager.
+
+        :param open_wizard: Show "open configuration file" options instead of "go back" options.
         """
 
         while True:  # Show options menu first.
+            available_options = {
+                'b': f"Toggle base64 encoding (Current: {self.conf.isbase64})",
+                'r': f"Toggle read-only mode (Current: {self.conf.readonly})",
+                'e': f"Set encoding ({self.conf.encoding})",
+                'p': f"Number of items per panel in browser (Current: {self.browser_items_to_show})"
+            }
+            # Add options depending on <open_wizard> state.
+            if open_wizard:
+                available_options['C'] = "Cancel"
+                available_options['O'] = "Open Configuration File in Command Mode"
+                available_options['o'] = "Open Configuration File"
+
+            else:
+                available_options['o'] = f"Toggle Command Mode (Current: {self.command_mode})"
+                available_options['w'] = "Go Back"
+
+            # Show the menu to the user.
             choice = _ui.Choices(
-                list_of_choices = {
-                    '1': f"Toggle base64 encoding (Current: {self.config_opts['isbase64']})",
-                    '2': f"Toggle read-only mode (Current: {self.config_opts['readonly']})",
-                    '3': f"Set encoding ({self.config_opts['encoding']})",
-                    '4': f"Number of items per panel in browser (Current: {self.config_opts['browser_items_to_show']})",
-                    "97": "Cancel",
-                    "98": "Open Configuration File in Command Mode",
-                    "99": "Open Configuration File"
-                }
+                list_of_choices=available_options,
+                case_sensitive=True
             )()
 
-            if choice == "97":
+            if choice == 'C' and open_wizard:
+                self.exit = True  # Cancel management of configuration file; return to main menu.
                 return
 
-            elif choice == '1':
-                self.config_opts["isbase64"] = not self.config_opts["isbase64"]
+            elif choice == 'O' and open_wizard:
+                self.command_mode = True
+                return
 
-            elif choice == '2':
-                self.config_opts["readonly"] = not self.config_opts["readonly"]
+            elif choice == 'o':  # This option is present in both <open_wizard> statements.
+                if open_wizard:
+                    return  # ? The default value for <self.command_mode> is False anyway.
 
-            elif choice == '3':
+                self.command_mode = not self.command_mode
+                self.do_not_reload = True
+
+            elif choice == 'w' and not open_wizard:
+                return
+
+            elif choice == 'b':
+                self.conf.isbase64 = not self.conf.isbase64
+
+            elif choice == 'r':
+                self.conf.readonly = not self.conf.readonly
+
+            elif choice == 'e':
                 new_conf_encoding: str = _ui.InputBox(
-                    title = "Enter new encoding to use",
-                    description = f"Leave blank for default. ({info.defaults['encoding']})"
-                )().replace(' ', '')
-                self.config_opts["encoding"] = info.defaults["encoding"]\
-                    if new_conf_encoding == ''\
+                    title="Enter new encoding to use",
+                    description=f"Leave blank for default. ({info.defaults['encoding']})"
+                )().lstrip().rstrip()
+                # Set default encoding when encoding is blank.
+                self.conf.encoding = info.defaults["encoding"] \
+                    if new_conf_encoding == '' \
                     else new_conf_encoding
 
-            elif choice == '4':
-                while True:
-                    try:
-                        new_browser_items_to_show: str = _ui.InputBox(
-                            title = "Number of items to show per panel in configuration file browser",
-                            description = f"Leave blank for default. ({info.defaults['browser_items_to_show']})"
-                        )()
-                        self.config_opts["browser_items_to_show"] = info.defaults["browser_items_to_show"]\
-                            if new_browser_items_to_show == ''\
-                            else int(new_browser_items_to_show)
+            elif choice == 'p':
+                try:
+                    # ? do not convert to int immediately for us to be able to accept empty inputs.
+                    new_browser_items_to_show: str = _ui.InputBox(
+                        title="Number of items to show per panel in configuration file browser",
+                        description=f"Leave blank for default. ({info.defaults['browser_items_to_show']})"
+                    )()
+                    # Set default number of items if empty.
+                    self.browser_items_to_show = info.defaults["browser_items_to_show"] \
+                        if new_browser_items_to_show == '' \
+                        else int(new_browser_items_to_show)
 
-                    except ValueError:
-                        continue
-
-                    else:
-                        break
-
-            elif choice == "98":
-                self.config_opts["command_mode"] = True
-                break
-
-            elif choice == "99":
-                break
+                except ValueError:
+                    print("[E] Invalid number.")
+                    _ui.confirm()
 
     def startCommandMode(self) -> None:
         """
@@ -134,11 +207,12 @@ class SimpleConfigManager:
         """
 
         for k, v in self.conf().items():
-            print(f"{k}: {v}")
+            print(f"{k}: {v if k != 'parser_version' else 'v'.format('.'.join(map(str, v)))}")
 
         print()
-        if not PRETTYTABLE_SUPPORT:
+        if not _PRETTYTABLE_SUPPORT:
             print("[!] `prettytable` is not installed.")
+            print()
 
         print("[i] Type `help` for more information. Type `quit` to exit.")
         print()
@@ -155,15 +229,37 @@ list                     List all existing key/value pairs in the configuration 
 
 base64                   Toggle base64 encoding of the configuration file.
 encoding <encoding>      Change the encoding of the configuration file.
+readonly                 Toggle read-only mode of the configuration file.
 
+settings                 Open the interactive settings menu.
 quit | exit              Close the configuration file.
-help                     Show this help menu."""
+help                     Show this help menu.
+
+
+
+EXPLICITLY DECLARING A VALUE TYPE
+
+    When setting a value, you can add the following prefixes to explicitly
+state its type:
+
+| Prefix | Type    | Example Value         |
+| str:   | string  | str:This is a string. |
+| int:   | integer | int:1024              |
+| float: | float   | float:3.1415          |
+| bool:  | boolean | bool:true             |
+
+When the value you entered cannot be converted, the program will raise an error."""
+
         while True:
             try:
-                command = shlex.split(input(self.config_opts["prompt"]))
+                command = shlex.split(input(self.prompt))
 
                 if command[0] in {"quit", "exit"}:
+                    self.exit = True
                     return
+
+                elif command[0] == "settings":
+                    return self.settings()
 
                 elif command[0] == "help":
                     print()
@@ -179,7 +275,8 @@ help                     Show this help menu."""
                             while True:
                                 new_config_filepath = _ui.InputBox(
                                     title=f"{info.title} (Save As)",
-                                    description="Enter a new filepath. Press CTRL+C to cancel."
+                                    description="Enter a new filepath. Press CTRL+C to cancel.",
+                                    input_prompt="filepath > "
                                 )()
 
                                 # Check if file exists
@@ -208,36 +305,27 @@ help                     Show this help menu."""
                         self.conf.save()  # Save modifications to file. (no `as` argument)
 
                     except KeyboardInterrupt:
-                        pass
+                        continue
+
+                    print("[i] Configuration file saved.")
 
                 elif command[0] == "info":
-                    if PRETTYTABLE_SUPPORT:
-                        conf_info = prettytable.PrettyTable(title=info.title, header=False)
-                        conf_info.add_rows((self.conf().items()))
-                        print(conf_info)
-
-                    else:
-                        print(info.title)
-                        print()
-                        for k, v in self.conf().items():
-                            print(f"{k}: {v}")
-
-                        print()
+                    self.showConfigInfo()
 
                 elif command[0] == "get":
                     print(self.conf[command[1]])
 
                 elif command[0] == "set":
-                    self.conf[command[1]] = command[2]
+                    self.conf[command[1]] = parseValue(command[2])
 
                 elif command[0] == "del":
                     del self.conf[command[1]]
 
                 elif command[0] == "list":
-                    if PRETTYTABLE_SUPPORT:
-                        conf_items = prettytable.PrettyTable(("Key", "Value"))
+                    if _PRETTYTABLE_SUPPORT:
+                        conf_items = prettytable.PrettyTable(("Key", "Value", "Data Type"))
                         for k, v in self.conf.items():
-                            conf_items.add_row((k, v))
+                            conf_items.add_row((k, v, _VALUE_TYPES[type(v)]))
 
                         print(conf_items)
 
@@ -245,7 +333,7 @@ help                     Show this help menu."""
                         print("Key: Value")
                         print()
                         for k, v in self.conf.items():
-                            print(f"- {k}: {v}")
+                            print(f"- {k}: {v} ({_VALUE_TYPES[type(v)]})")
 
                         print()
 
@@ -257,6 +345,14 @@ help                     Show this help menu."""
                     self.conf.encoding = command[1]
                     print(f"Encoding successfully changed to {command[1]}.")
 
+                elif command[0] == "readonly":
+                    self.conf.readonly = not self.conf.readonly
+                    print(
+                        "Configuration file is now read-only."
+                        if self.conf.readonly
+                        else "Read-only mode is now disabled."
+                    )
+
             except Exception as e:
                 print(f"[ERROR] {e}")
 
@@ -265,36 +361,20 @@ help                     Show this help menu."""
         Start an interactive session.
         """
 
-        # ? Attempt to open configuration file.
         try:
-            self.conf = Simple(
-                config_path = self.config_path,
-                isbase64 = self.config_opts["isbase64"],
-                readonly = self.config_opts["readonly"],
-                encoding = self.config_opts["encoding"]
-            )
+            if not self.do_not_reload:
+                self.conf.load()
 
         except Exception as e:
             print(f"[ERROR] Cannot open configuration file: {e}")
+            self.exit = True
             _ui.confirm()
             return
 
-        else:
-            _ui.clearScreen()
-            if self.config_opts["command_mode"]:
-                return self.startCommandMode()
-
+        while True:
             try:
-                self.conf.load()
-
-            except Exception as e:
-                print(f"[ERROR] Cannot open configuration file: {e}")
-                _ui.confirm()
-                return
-
-            while True:
                 choice = _ui.Choices(
-                    list_of_choices = {
+                    list_of_choices={
                         'a': "Add or modify a key/value pair.",
                         'b': "Browse existing key/value pairs.",
                         'r': "Remove an existing key/value pair.",
@@ -305,20 +385,22 @@ help                     Show this help menu."""
                         'D': "Discard changes and close",
                         'S': "Save and close"
                     },
-                    description = f"You are currently editing `{self.config_path}`. Please choose an action to perform below.",
-                    case_sensitive = True
+                    description=f"You are currently editing:\n`{self.config_path}`",
+                    case_sensitive=True
                 )()
 
                 if choice == 'D':
                     if _ui.Choices(
-                        list_of_choices = {'y': "Yes", 'n': "No"},
-                        title = "Discard changes and close",
-                        description = "Are you sure?"
+                        list_of_choices={'y': "Yes", 'n': "No"},
+                        title="Discard changes and close",
+                        description="Are you sure?"
                     )() == 'y':
+                        self.exit = True
                         return
 
                 elif choice == 'S':
                     self.conf.save()
+                    self.exit = True
                     return
 
                 elif choice == 'd':
@@ -329,42 +411,72 @@ help                     Show this help menu."""
 
                 elif choice == 'i':
                     _ui.clearScreen()
-                    if PRETTYTABLE_SUPPORT:
-                        conf_info_table = prettytable.PrettyTable(title="Configuration File Information", header=False)
-                        conf_info_table.add_rows((self.conf()))
-                        print(conf_info_table)
-
-                    else:
-                        print("Configuration File Information:")
-                        print()
-                        for k, v, in self.conf():
-                            print(f"{k}: {v}")
-
-                        print()
-
+                    self.showConfigInfo()
                     _ui.confirm()
 
                 elif choice == 'a':
                     try:
                         self.conf.set(
-                            _ui.InputBox(description="Enter the key name.")(),
-                            _ui.InputBox(description="Enter the key value.")()
+                            _ui.InputBox(
+                                title="Add or modify a key/value pair.",
+                                description="Enter the key name. (CTRL+C to cancel)"
+                            )(),
+                            parseValue(
+                                _ui.InputBox(
+                                    title="Add or modify a key/value pair.",
+                                    description="Enter the key value. (CTRL+C to cancel)"
+                                )()
+                            )
                         )
 
                     except ValueError as e:
                         print(f"[ERROR] {e}")
                         _ui.confirm()
 
+                    except KeyboardInterrupt:
+                        pass
+
                 elif choice == 'b':
                     self.configBrowser()
 
                 elif choice == 'r':
                     self.conf.remove(
-                        _ui.InputBox(description="Enter the name of the key to remove.")()
+                        _ui.InputBox(
+                            title="Remove an existing key/value pair.",
+                            description="Enter the name of the key to remove. (CTRL+C to cancel)"
+                        )()
                     )
 
                 elif choice == 'q':
-                    self.settings()
+                    return self.settings()
+
+            except KeyboardInterrupt:
+                pass
+
+    def showConfigInfo(self) -> None:
+        """
+        Print self.conf information
+        """
+
+        if _PRETTYTABLE_SUPPORT:
+            conf_info_table = prettytable.PrettyTable(title="Configuration File Information", header=False)
+            for k, v in self.conf().items():
+                conf_info_table.add_row(
+                    (
+                        k,
+                        v if k != "parser_version" else "v{}".format('.'.join(map(str, v)))
+                    )
+                )
+
+            print(conf_info_table)
+
+        else:
+            print("Configuration File Information:")
+            print()
+            for k, v, in self.conf():
+                print(f"{k}: {v}")
+
+            print()
 
     def configBrowser(self) -> None:
         """
@@ -372,127 +484,108 @@ help                     Show this help menu."""
         """
 
         starting_index: int = 0  # Set default value for starting index before the loop.
-
         while True:
-            _ui.clearScreen()
-            print(str(
-                _ui.InputBox(
-                    title = "Configuration File Browser",
-                    description = self.conf().get("name", self.conf.config_path)
+            try:
+                _ui.clearScreen()
+                print(  # Print only the header.
+                    str(
+                        _ui.InputBox(
+                            title="Configuration File Browser",
+                            description=self.conf().get("name", self.conf.config_path)
+                        )
+                    )
                 )
-            ))
 
-            # These variables change depending on the panel number.
-            conf_items = self.conf.items()
-            maximum_index: int = len(conf_items) - 1  # Max index for whole config
-            ending_index: int = (starting_index + self.config_opts["browser_items_to_show"]) - 1  # Max index for panel
+                # These variables change depending on the panel number.
+                conf_items = self.conf.items()
+                maximum_index: int = len(conf_items) - 1  # Max index for whole config
+                ending_index: int = (starting_index + self.browser_items_to_show) - 1  # Max index for panel
 
-            browser_table = prettytable.PrettyTable(
-                field_names = ("Item #", "Key", "Value")
-            )
-            i = starting_index
-            while i <= ending_index and i <= maximum_index:
-                browser_table.add_row((f"[{i + 1}]", conf_items[i][0], conf_items[i][1]))
-                i += 1
+                browser_table = prettytable.PrettyTable(field_names=("Item #", "Key", "Value", "Data Type"))
+                i = starting_index
+                while i <= ending_index and i <= maximum_index:
+                    browser_table.add_row(
+                        (
+                            f"[{i + 1}]",
+                            conf_items[i][0],
+                            conf_items[i][1],
+                            _VALUE_TYPES[type(conf_items[i][1])]
+                        )
+                    )
+                    i += 1
 
-            print(browser_table)
+                print(browser_table)
 
-            browser_controller_choices = {}
-            if starting_index != 0:  # If we are not on the first panel.
-                browser_controller_choices["Q"] = "Previous"
+                browser_controller_choices = {}
+                if starting_index != 0:  # If we are not on the first panel.
+                    browser_controller_choices['Q'] = "First"
+                    browser_controller_choices['q'] = "Previous"
 
-            if ending_index < maximum_index:  # If we reached the last panel.
-                browser_controller_choices["E"] = "Next"
+                if ending_index < maximum_index:  # If we reached the last panel.
+                    browser_controller_choices['E'] = "Last"
+                    browser_controller_choices['e'] = "Next"
 
-            browser_controller_choices["W"] = "Go back"
+                browser_controller_choices['w'] = "Go back"
 
-            print()
-            print(_ui.Choices(list_of_choices=browser_controller_choices).getChoicesList())
-            print()
-            operation = input(" >>> ").lower()
-            if operation == 'w':
-                return
+                print()
+                print(_ui.Choices(list_of_choices=browser_controller_choices).getChoicesList())
+                print()
+                operation = input(" >>> ").lstrip().rstrip()
+                if operation == 'w':
+                    return
 
-            elif operation == 'q':
-                if starting_index != 0:
-                    starting_index -= self.config_opts["browser_items_to_show"]
+                elif operation == 'Q':
+                    starting_index = 0
 
-            elif operation == 'e':
-                if ending_index < maximum_index:
-                    starting_index += self.config_opts["browser_items_to_show"]
+                elif operation == 'q':
+                    starting_index = 0 \
+                        if starting_index < self.browser_items_to_show \
+                        else starting_index - self.browser_items_to_show
 
+                elif operation == 'E':
+                    starting_index = (maximum_index - self.browser_items_to_show) + 1
 
-class AdvancedConfigManager:
-    def __init__(self, config_path: str):
-        """
-        The initialization method of AdvancedConfigHandler() class.
+                elif operation == 'e':
+                    # ? Print the last panel if
+                    starting_index = (maximum_index - self.browser_items_to_show) + 1 \
+                        if starting_index + self.browser_items_to_show >= maximum_index - self.browser_items_to_show \
+                        else starting_index + self.browser_items_to_show
 
-        This class handles interactions between the user and ConfigHandler.
+                elif operation in map(str, tuple(range(starting_index + 1, min(ending_index, maximum_index) + 2))):
+                    while True:
+                        key_to_edit = int(operation) - 1
+                        key_to_edit_operation = _ui.Choices(
+                            list_of_choices={
+                                'E': "Edit value",
+                                'R': "Remove key/value pair",
+                                'W': "Go Back"
+                            },
+                            description="{0}\n{1}\n{2}".format(
+                                f"Key: `{conf_items[key_to_edit][0]}`",
+                                f"Value: `{conf_items[key_to_edit][1]}`",
+                                f"Value Type: {_VALUE_TYPES[type(conf_items[key_to_edit][1])]}"
+                            )
+                        )().lower()
 
-        :param config_path: The path to the configuration file to open.
-        """
+                        if key_to_edit_operation == 'w':
+                            break
 
-        self.conf = None
-        self.config_path = config_path
-        self.config_opts = {
-            "prompt": " >>> ",
-            "strict": True,
-            "readonly": False,
-            "encoding": info.defaults["encoding"],
-            "command_mode": False
-        }
+                        elif key_to_edit_operation == 'e':
+                            self.conf[conf_items[key_to_edit][0]] = parseValue(
+                                _ui.InputBox(
+                                    description=f"Please enter the new value for key `{conf_items[key_to_edit][0]}`."
+                                )()
+                            )
+                            conf_items = self.conf.items()
 
-    def settings(self):
-        """
-        Let the user configure the manager.
-        """
+                        elif key_to_edit_operation == 'r':
+                            del self.conf[conf_items[key_to_edit][0]]
+                            print("Pair deleted.")
+                            _ui.confirm()
+                            break
 
-        while True:
-            choice = _ui.Choices(
-                list_of_choices = {
-                    '1': f"Toggle strict mode (Current: {self.config_opts['strict']})",
-                    '2': f"Toggle read-only mode (Current: {self.config_opts['readonly']})",
-                    '3': f"Set encoding ({self.config_opts['encoding']})",
-                    "97": "Cancel",
-                    "98": "Open Configuration File in Command Mode",
-                    "99": "Open Configuration File"
-                }
-            )()
-
-            if choice == "97":
-                return
-
-            elif choice == '1':
-                self.config_opts["strict"] = not self.config_opts["strict"]
-
-            elif choice == '2':
-                self.config_opts["readonly"] = not self.config_opts["readonly"]
-
-            elif choice == '3':
-                new_conf_encoding: str = _ui.InputBox(
-                    title="Enter new encoding to use",
-                    description=f"Leave blank for default. ({info.defaults['encoding']})"
-                )().replace(' ', '')
-                self.config_opts["encoding"] = info.defaults["encoding"]\
-                    if new_conf_encoding == ''\
-                    else new_conf_encoding
-
-            elif choice == "98":
-                self.config_opts["command_mode"] = True
-                break
-
-            elif choice == "99":
-                break
-
-    def startCommandMode(self):
-        """
-        Start an interactive session in "command" mode.
-        """
-
-    def start(self):
-        """
-        Start an interactive session.
-        """
+            except KeyboardInterrupt:
+                pass
 
 
 def openConfig() -> None:
@@ -507,16 +600,16 @@ def openConfig() -> None:
     while True:
         try:
             config_path: str = _ui.InputBox(
-                title = "Open an Existing Configuration File",
-                description = "Please enter the filepath of an existing configuration file. CTRL+C to cancel."
+                title="Open an Existing Configuration File",
+                description="Please enter the filepath of an existing configuration file.\n(CTRL+C to cancel)"
             )()
             if _ui.Choices(
-                list_of_choices = {
+                list_of_choices={
                     'y': "Yes",
                     'n': "No"
                 },
-                description = f"Is this correct? `{config_path}`",
-                case_sensitive = False
+                description=f"Is this correct?\n`{config_path}`",
+                case_sensitive=False
             )().lower() == 'y':
                 break
 
@@ -529,27 +622,26 @@ def openConfig() -> None:
     while True:
         try:
             config_type: str = _ui.Choices(
-                list_of_choices = {
-                    '1': "Simple Configuration File",
-                    '2': "Advanced Configuration File",
-                    "99": "Cancel"
+                list_of_choices={
+                    's': "Simple Configuration File",
+                    'a': "Advanced Configuration File",
+                    "c": "Cancel"
                 }
-            )()
+            )().lower()
 
-            if config_type == "99":
+            if config_type == "c":
                 return
 
-            elif config_type == '1':
-                config_manager = SimpleConfigManager(config_path)
+            elif config_type == 's':
+                SimpleConfigManager(config_path)()
+                return
 
-            elif config_type == '2':
-                config_manager = AdvancedConfigManager(config_path)
-
-            config_manager.settings()
-            config_manager.start()
+            elif config_type == 'a':
+                # TODO
+                # AdvancedConfigManager(config_path)()
+                print("WIP")
+                _ui.confirm()
+                return
 
         except (KeyboardInterrupt, EOFError):
             pass
-
-        finally:
-            return
