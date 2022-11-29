@@ -23,22 +23,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
-import random
-import string
-
-from config_handler.advanced import compression
-
-
-class TestAdvancedCompressions:
-    def testZLib(self):
-        for _ in range(0, 10):
-            text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
-            compressed = compression.compress(text, "zlib")
-            assert text == compression.decompress(compressed, "zlib")
-
-    def testLZ4(self):
-        for _ in range(0, 10):
-            text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
-            compressed = compression.compress(text, "lz4")
-            assert text == compression.decompress(compressed, "lz4")

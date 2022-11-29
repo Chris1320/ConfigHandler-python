@@ -32,6 +32,8 @@ from typing import Final
 from typing import Tuple
 from typing import Union
 
+from config_handler import info
+
 
 class Simple:
     r"""
@@ -48,7 +50,7 @@ class Simple:
     - Values must not contain a newline (\n).
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (0, 5, 0)  # Parser version
+    parser_version: Final[Tuple[int, int, int]] = (0, 5, 1)  # Parser version
     _separator: Final[str] = '='
     _comment_char: Final[str] = '#'
 
@@ -57,7 +59,7 @@ class Simple:
         config_path: str,
         isbase64: bool = False,
         readonly: bool = False,
-        encoding: str = "utf-8"
+        encoding: str = info.defaults["encoding"]
     ):
         """
         :param config_path: The path of the configuration file to open or create.
@@ -181,7 +183,8 @@ class Simple:
         else:
             return True
 
-    def _parseValue(self, value: Any) -> bool:
+    @staticmethod
+    def _parseValue(value: Any) -> bool:
         """
         Check if the value is valid.
         """
@@ -207,6 +210,7 @@ class Simple:
         will be overwritten.
         """
 
+        self.__data = {}
         # Open in `rb` mode if self.isbase64 is True.
         with open(self.config_path, "rb" if self.isbase64 else 'r') as f:
             # Decode from Base64 if self.base64 is True.

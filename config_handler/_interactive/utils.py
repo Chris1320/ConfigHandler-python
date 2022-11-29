@@ -24,21 +24,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import random
-import string
+import os
+from getpass import getpass
 
-from config_handler.advanced import compression
+from config_handler import info
 
 
-class TestAdvancedCompressions:
-    def testZLib(self):
-        for _ in range(0, 10):
-            text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
-            compressed = compression.compress(text, "zlib")
-            assert text == compression.decompress(compressed, "zlib")
+def showProgramInformation() -> None:
+    """
+    Show the program information.
+    """
 
-    def testLZ4(self):
-        for _ in range(0, 10):
-            text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
-            compressed = compression.compress(text, "lz4")
-            assert text == compression.decompress(compressed, "lz4")
+    print()
+    print(info.title)
+    print()
+    print(f"Program Version:           v{'.'.join([str(v) for v in info.version])}")
+    print(f"Program Release:           {info.release}")
+    print(f"Current Working Directory: {os.getcwd()}")
+    print()
+
+
+def getConfigurationFilePassword(
+    prompt: str = "Enter configuration file password: ",
+    confirmation_prompt: str = "Re-enter configuration file password: "
+) -> str:
+    """
+    Ask the user for the configuration file password.
+    """
+
+    # ? https://security.stackexchange.com/questions/29019/are-passwords-stored-in-memory-safe
+    while True:
+        first_input: str = getpass(prompt)
+        confirm_input: str = getpass(confirmation_prompt)
+        if first_input == confirm_input:
+            return confirm_input
+
+        else:
+            print("[E] Passwords do not match.")
+            continue

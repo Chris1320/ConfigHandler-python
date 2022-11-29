@@ -28,6 +28,7 @@ import base64
 from typing import Union
 from importlib import import_module
 
+from config_handler import info
 from config_handler.advanced.compression import lz4
 from config_handler.advanced.compression import zlib
 
@@ -45,7 +46,7 @@ def isAvailable(compression_name: Union[str, None]) -> bool:
     return getattr(import_module(f"{parent_import_path}.{compression_name}"), "available")
 
 
-def compress(data: str, algorithm: Union[str, None], encoding: str = "utf-8") -> str:
+def compress(data: str, algorithm: Union[str, None], encoding: str = info.defaults["encoding"]) -> str:
     """
     Compress <data> using <algorithm>.
     Return the base64-encoded result as a string.
@@ -64,7 +65,7 @@ def compress(data: str, algorithm: Union[str, None], encoding: str = "utf-8") ->
         raise ValueError(f"Unsupported compression algorithm: {algorithm}")
 
 
-def decompress(data: str, algorithm: Union[str, None], encoding: str = "utf-8") -> str:
+def decompress(data: str, algorithm: Union[str, None], encoding: str = info.defaults["encoding"]) -> str:
     """
     Decompress <data> using <algorithm>.
     """
