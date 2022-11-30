@@ -48,7 +48,7 @@ def main() -> int:
                     "I": "About",
                     "Q": "Quit"
                 },
-                description = "Enter the number of the operation you want to perform.",
+                description = "Choose the operation you want to perform.",
                 case_sensitive = False
             )().lower()
 
