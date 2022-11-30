@@ -31,6 +31,7 @@ from typing import List
 from typing import Final
 from typing import Tuple
 from typing import Union
+from typing import Optional
 from hashlib import blake2b
 
 from config_handler import info
@@ -46,7 +47,7 @@ class Advanced:
     This type of configuration file uses the JSON format.
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (2, 3, 1)
+    parser_version: Final[Tuple[int, int, int]] = (2, 4, 0)
     supported_compression: Final[tuple] = (
         None,
         "zlib",
@@ -60,7 +61,7 @@ class Advanced:
     def __init__(
         self,
         config_path: str,
-        config_pass: Union[str, None] = None,
+        config_pass: Optional[str] = None,
         readonly: bool = False,
         strict: bool = True,
         encoding: str = info.defaults["encoding"]
@@ -224,6 +225,18 @@ class Advanced:
             raise ValueError(f"Unsupported encryption algorithm: {encryption_name}")
 
     @property
+    def config_pass(self) -> bool:
+        """
+        Returns True if the password is set, otherwise False.
+        """
+
+        return self.__config_pass is not None
+
+    @config_pass.setter
+    def config_pass(self, config_pass: str):
+        self.__config_pass = config_pass
+
+    @property
     def checksum(self) -> str:
         """
         Get the checksum of the configuration file data.
@@ -259,7 +272,7 @@ class Advanced:
     def _checkOldConfigVersion(
         self,
         version_to_check: Tuple[int, int, int],
-        reference_version: Union[Tuple[int, int, int], None] = None
+        reference_version: Optional[Tuple[int, int, int]] = None
     ) -> Tuple[int, int]:
         """
         Check if the given version number is newer or older than the current
@@ -317,9 +330,9 @@ class Advanced:
     def new(
         self,
         name: str = __name__,
-        author: Union[str, None] = None,
-        compression: Union[str, None] = None,
-        encryption: Union[str, None] = None
+        author: Optional[str] = None,
+        compression: Optional[str] = None,
+        encryption: Optional[str] = None
     ) -> None:
         """
         Create a new configuration file to <self.config_path>.
