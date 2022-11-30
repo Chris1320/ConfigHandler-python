@@ -206,7 +206,7 @@ def createNewConfig() -> None:
                             print("[E] The selected encryption is not available.")
                             _ui.confirm()
 
-                    elif config_opts_action == 'N':
+                    elif config_opts_action == 'n':
                         print("Creating new configuration file...")
                         new_advanced_config = advanced.Advanced(
                             config_path = config_path,
