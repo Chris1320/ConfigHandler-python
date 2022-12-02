@@ -45,14 +45,23 @@ def showProgramInformation() -> None:
 
 
 def getConfigurationFilePassword(
+    *,
     prompt: str = "Enter configuration file password: ",
-    confirmation_prompt: str = "Re-enter configuration file password: "
+    confirmation_prompt: str = "Re-enter configuration file password: ",
+    set_new_pass: bool = True
 ) -> str:
     """
     Ask the user for the configuration file password.
+
+    :param prompt: The prompt to show.
+    :param confirmation_prompt: The confirmation prompt to show.
+    :param set_new_pass: True if user is setting a new password. (Will show confirmation prompt)
     """
 
     # ? https://security.stackexchange.com/questions/29019/are-passwords-stored-in-memory-safe
+    if not set_new_pass:
+        return getpass(prompt)
+
     while True:
         first_input: str = getpass(prompt)
         confirm_input: str = getpass(confirmation_prompt)

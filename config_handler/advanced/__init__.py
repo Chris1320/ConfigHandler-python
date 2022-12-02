@@ -47,7 +47,7 @@ class Advanced:
     This type of configuration file uses the JSON format.
     """
 
-    parser_version: Final[Tuple[int, int, int]] = (2, 4, 0)
+    parser_version: Final[Tuple[int, int, int]] = (2, 5, 0)
     supported_compression: Final[tuple] = (
         None,
         "zlib",
@@ -158,9 +158,6 @@ class Advanced:
         Return information about the configuration file in type<dict>.
         """
 
-        if not self.__initialized:
-            raise exceptions.ConfigFileNotInitializedError
-
         return {
             "name": self.name,
             "author": self.author,
@@ -254,6 +251,10 @@ class Advanced:
         """
 
         return os.path.isfile(self.config_path)
+
+    @property
+    def is_initialized(self) -> bool:
+        return self.__initialized
 
     def _generateChecksum(self, data: Union[str, bytes], digest_size: int = 8) -> str:
         """
@@ -360,12 +361,15 @@ class Advanced:
         # ? This also allows in-memory configuration manipulation.
         # self.save()
 
-    def load(self) -> None:
+    def load(self, load_meta: bool = False) -> None:
         """
         Load the configuration file contents to memory.
         Call this method when you want to read the configuration file.
         If `self.save()` is called without calling this method, the configuration file
         will be overwritten.
+
+        :param load_meta: Load the configuration file, but do not attempt to unpack it.
+                          This will keep the configuration file in uninitialized state.
         """
 
         if not self.exists:
@@ -397,7 +401,9 @@ class Advanced:
                 self.encoding = config["encoding"]
 
                 # Step 3: Unpack and load the data.
-                self.__data = json.loads(self._unpack(config["data"]))
+                if not load_meta:
+                    self.__data = json.loads(self._unpack(config["data"]))
+
                 if self.strict:
                     # Step 4: Verify the checksum if strict.
                     if self._checkOldConfigVersion(config["parser"]["version"], (2, 3, 0))[1] < 0:
@@ -413,7 +419,8 @@ class Advanced:
             except KeyError:
                 raise exceptions.InvalidConfigurationFileError
 
-        self.__initialized = True
+        if not load_meta:
+            self.__initialized = True
 
     def save(self) -> None:
         """
