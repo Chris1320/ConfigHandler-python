@@ -47,6 +47,7 @@ def encrypt(data: str, key: Union[bytes, str], encoding: str = info.defaults["en
 
     :param data: The data to encrypt.
     :param key: The key to use.
+    :param encoding: The encoding to use.
     """
 
     key_size = 32
@@ -71,6 +72,7 @@ def decrypt(data: str, key: Union[bytes, str], encoding: str = info.defaults["en
 
     :param data: The data to decrypt.
     :param key: The key to use.
+    :param encoding: The encoding to use.
     """
 
     key_size = 32

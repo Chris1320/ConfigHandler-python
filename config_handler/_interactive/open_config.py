@@ -26,12 +26,20 @@ SOFTWARE.
 
 import os
 import shlex
+from abc import ABC
+from abc import abstractmethod
 from typing import Any
+from typing import Dict
 from typing import Final
+from typing import Union
+from typing import Callable
+from typing import Optional
 
 from config_handler import _ui
 from config_handler import info
 from config_handler.simple import Simple
+from config_handler.advanced import Advanced
+from config_handler._interactive import utils
 
 try:
     import prettytable
@@ -86,27 +94,19 @@ def parseValue(value: str) -> Any:
         return value  # Do not do anything with value if none of the above are true.
 
 
-class SimpleConfigManager:
+class ConfigManager(ABC):
     def __init__(self, config_path: str):
         """
-        The initialization method of SimpleConfigManager() class.
-        This class handles interactions between the user and ConfigHandler.
-
         :param config_path: The path to the configuration file to open.
         """
 
+        self.conf: Union[Simple, Advanced]  # ? `self.conf` is created in the child class's __init__() method, since
+        self.exit = False  # ? it uses different object types depending on the config handler type.
+        self.prompt = " >>> "
         self.config_path = config_path
         self.command_mode = False
-        self.prompt = " >>> "
-        self.browser_items_to_show = info.defaults["browser_items_to_show"]
-        self.conf = Simple(
-            config_path=self.config_path,
-            isbase64=False,
-            readonly=False,
-            encoding=info.defaults["encoding"]
-        )
         self.do_not_reload = False
-        self.exit = False
+        self.browser_items_to_show = info.defaults["browser_items_to_show"]
 
     def __call__(self) -> None:
         """
@@ -121,6 +121,23 @@ class SimpleConfigManager:
             else:
                 self.start()
 
+    @abstractmethod
+    def updateSettingsAvailableOptions(self, open_wizard: bool) -> dict[str, str]:
+        """
+        Provide option descriptions to be used in self.settings().
+
+        :param open_wizard: True if settings menu is in open wizard mode.
+        """
+
+    @abstractmethod
+    def updateSettingsOptionBehaviors(self, open_wizard: bool) -> dict[str, Callable]:
+        """
+        Provide option behaviors to be used in self.settings().
+        Every callable must accept a positional boolean parameter `open_wizard`.
+
+        :param open_wizard: True if settings menu is in open wizard mode.
+        """
+
     def settings(self, open_wizard: bool = False) -> None:
         """
         Let the user configure the manager.
@@ -129,13 +146,14 @@ class SimpleConfigManager:
         """
 
         while True:  # Show options menu first.
-            available_options = {
-                'b': f"Toggle base64 encoding (Current: {self.conf.isbase64})",
-                'r': f"Toggle read-only mode (Current: {self.conf.readonly})",
-                'e': f"Set encoding ({self.conf.encoding})",
-                'p': f"Number of items per panel in browser (Current: {self.browser_items_to_show})"
-            }
-            # Add options depending on <open_wizard> state.
+            available_options = self.updateSettingsAvailableOptions(open_wizard)
+            option_behaviors = self.updateSettingsOptionBehaviors(open_wizard)
+
+            # ? set options that are available on any configuration file handler type.
+            available_options['r'] = f"Toggle read-only mode (Current: {self.conf.readonly})"
+            available_options['e'] = f"Set encoding ({self.conf.encoding})"
+            # ? Add interactive mode options depending on <open_wizard> state.
+            available_options['p'] = f"Number of items per panel in browser (Current: {self.browser_items_to_show})"
             if open_wizard:
                 available_options['C'] = "Cancel"
                 available_options['O'] = "Open Configuration File in Command Mode"
@@ -169,9 +187,6 @@ class SimpleConfigManager:
             elif choice == 'w' and not open_wizard:
                 return
 
-            elif choice == 'b':
-                self.conf.isbase64 = not self.conf.isbase64
-
             elif choice == 'r':
                 self.conf.readonly = not self.conf.readonly
 
@@ -201,13 +216,76 @@ class SimpleConfigManager:
                     print("[E] Invalid number.")
                     _ui.confirm()
 
+            elif choice in option_behaviors:
+                option_behaviors[choice](open_wizard)
+
+    def buildHelpMenu(self, additional_commands: Optional[Dict[str, str]] = None) -> str:
+        """
+        Add config handler type-specific commands to the help menu of command mode.
+        """
+
+        file_handling_commands = {
+            "load": "Load the configuration file.",
+            "save [as]": "Save the configuration file. If `as` is added as an argument, ask for a new filepath.",
+            "info": "Show information about the configuration file.",
+            "encoding <encoding>": "Change the encoding of the configuration file.",
+            "readonly": "Toggle read-only mode of the configuration file."
+        }
+        config_data_commands = {
+            "get <key>": "Get the value of a key.",
+            "set <key> <value>": "Set the value of a key.",
+            "del <key>": "Remove an existing key/value pair from the configuration file.",
+            "list": "List all existing key/value pairs in the configuration file."
+        }
+        config_manager_commands = {
+            "settings": "Open the interactive settings menu.",
+            "quit | exit": "Close the configuration file.",
+            "help": "Show this help menu."
+        }
+        additional_commands = {} if additional_commands is None else additional_commands
+
+        max_key_length: int = max(
+            max(len(key) for key in file_handling_commands),
+            max(len(key) for key in config_data_commands),
+            max(len(key) for key in additional_commands),
+            max(len(key) for key in config_manager_commands)
+        )
+        margin = 4
+
+        result = "Available Commands:\n\n"
+
+        for categories in (file_handling_commands, config_data_commands, additional_commands, config_manager_commands):
+            for command, description in categories.items():
+                spacer = ' ' * ((max_key_length + margin) - len(command))
+                result += f"{command}{spacer}{description}\n"
+
+            result += '\n'
+
+        result += """\nEXPLICITLY DECLARING A VALUE TYPE
+
+When setting a value, you can add the following prefixes to explicitly
+        state its type:
+
+        | Prefix | Type    | Example Value         |
+        | str:   | string  | str:This is a string. |
+        | int:   | integer | int:1024              |
+        | float: | float   | float:3.1415          |
+        | bool:  | boolean | bool:true             |
+
+When the value you entered cannot be converted, the program will raise an error."""
+
+        return result
+
+    @abstractmethod
+    def updateCommandModeBehaviors(self) -> Dict[str, Callable]:
+        """
+        Provide command behaviors to be used in self.startCommandMode().
+        """
+
     def startCommandMode(self) -> None:
         """
         Start an interactive session in "command" mode.
         """
-
-        for k, v in self.conf().items():
-            print(f"{k}: {v if k != 'parser_version' else 'v'.format('.'.join(map(str, v)))}")
 
         print()
         if not _PRETTYTABLE_SUPPORT:
@@ -216,39 +294,8 @@ class SimpleConfigManager:
 
         print("[i] Type `help` for more information. Type `quit` to exit.")
         print()
-        help_menu = """Available Commands:
-
-load                     Load the configuration file.
-save [as]                Save the configuration file. If `as` is added as an argument, ask for a new filepath.
-info                     Show information about the configuration file.
-
-get <key>                Get the value of a key.
-set <key> <value>        Set the value of a key.
-del <key>                Remove an existing key/value pair from the configuration file.
-list                     List all existing key/value pairs in the configuration file.
-
-base64                   Toggle base64 encoding of the configuration file.
-encoding <encoding>      Change the encoding of the configuration file.
-readonly                 Toggle read-only mode of the configuration file.
-
-settings                 Open the interactive settings menu.
-quit | exit              Close the configuration file.
-help                     Show this help menu.
-
-
-
-EXPLICITLY DECLARING A VALUE TYPE
-
-    When setting a value, you can add the following prefixes to explicitly
-state its type:
-
-| Prefix | Type    | Example Value         |
-| str:   | string  | str:This is a string. |
-| int:   | integer | int:1024              |
-| float: | float   | float:3.1415          |
-| bool:  | boolean | bool:true             |
-
-When the value you entered cannot be converted, the program will raise an error."""
+        help_menu = self.buildHelpMenu()
+        command_behaviors = self.updateCommandModeBehaviors()
 
         while True:
             try:
@@ -337,10 +384,6 @@ When the value you entered cannot be converted, the program will raise an error.
 
                         print()
 
-                elif command[0] == "base64":
-                    self.conf.isbase64 = not self.conf.isbase64
-                    print("Base64 encoding is enabled." if self.conf.isbase64 else "Base64 encoding is disabled.")
-
                 elif command[0] == "encoding":
                     self.conf.encoding = command[1]
                     print(f"Encoding successfully changed to {command[1]}.")
@@ -353,6 +396,9 @@ When the value you entered cannot be converted, the program will raise an error.
                         else "Read-only mode is now disabled."
                     )
 
+                elif command[0] in command_behaviors:
+                    command_behaviors[command[0]](command)
+
             except Exception as e:
                 print(f"[ERROR] {e}")
 
@@ -361,15 +407,22 @@ When the value you entered cannot be converted, the program will raise an error.
         Start an interactive session.
         """
 
-        try:
-            if not self.do_not_reload:
-                self.conf.load()
+        while True:
+            try:
+                if not self.do_not_reload:
+                    self.conf.load()
 
-        except Exception as e:
-            print(f"[ERROR] Cannot open configuration file: {e}")
-            self.exit = True
-            _ui.confirm()
-            return
+                break
+
+            except Exception as e:
+                print(f"[ERROR] Cannot open configuration file: {e}")
+                self.exit = True
+                if _ui.Choices(
+                    list_of_choices={'y': "Yes", 'n': "No", '': "Default"},
+                    input_prompt="Do you want to try to load the configuration file again? (Y/n) > ",
+                    clear_screen=False
+                )(True).lower() == 'n':
+                    return
 
         while True:
             try:
@@ -453,30 +506,11 @@ When the value you entered cannot be converted, the program will raise an error.
             except KeyboardInterrupt:
                 pass
 
+    @abstractmethod
     def showConfigInfo(self) -> None:
         """
-        Print self.conf information
+        Show configuration file information.
         """
-
-        if _PRETTYTABLE_SUPPORT:
-            conf_info_table = prettytable.PrettyTable(title="Configuration File Information", header=False)
-            for k, v in self.conf().items():
-                conf_info_table.add_row(
-                    (
-                        k,
-                        v if k != "parser_version" else "v{}".format('.'.join(map(str, v)))
-                    )
-                )
-
-            print(conf_info_table)
-
-        else:
-            print("Configuration File Information:")
-            print()
-            for k, v, in self.conf():
-                print(f"{k}: {v}")
-
-            print()
 
     def configBrowser(self) -> None:
         """
@@ -588,6 +622,173 @@ When the value you entered cannot be converted, the program will raise an error.
                 pass
 
 
+class SimpleConfigManager(ConfigManager):
+    def __init__(self, config_path: str):
+        """
+        The initialization method of SimpleConfigManager() class.
+        This class handles interactions between the user and ConfigHandler.
+
+        :param config_path: The path to the configuration file to open.
+        """
+
+        super().__init__(config_path)
+        self.conf: Simple = Simple(
+            config_path=self.config_path,
+            encoding=info.defaults["encoding"]
+        )
+
+    def updateSettingsAvailableOptions(self, open_wizard: bool) -> dict[str, str]:
+        return {'b': f"Toggle base64 encoding (Current: {self.conf.isbase64})"}
+
+    def updateSettingsOptionBehaviors(self, open_wizard: bool) -> dict[str, Callable]:
+        return {'b': self._setOption_base64}
+
+    def _setOption_base64(self, *args) -> None:
+        """Used in self.settings() method."""
+        self.conf.isbase64 = not self.conf.isbase64
+        self.conf.save()
+
+    def buildHelpMenu(self, **kwargs) -> str:
+        additional_commands = {"base64": "Toggle base64 encoding of the configuration file."}
+        return super().buildHelpMenu(additional_commands)
+
+    def _setCommand_base64(self, command: list) -> None:
+        self.conf.isbase64 = not self.conf.isbase64
+        print("Base64 encoding is enabled." if self.conf.isbase64 else "Base64 encoding is disabled.")
+
+    def updateCommandModeBehaviors(self) -> Dict[str, Callable]:
+        return {"base64": self._setCommand_base64}
+
+    def startCommandMode(self) -> None:
+        """
+        Start an interactive session in "command" mode.
+        """
+
+        for k, v in self.conf().items():  # Show configuration information
+            print(f"{k}: {v if k != 'parser_version' else 'v{0}'.format('.'.join(map(str, v)))}")
+
+        return super().startCommandMode()
+
+    def showConfigInfo(self) -> None:
+        if _PRETTYTABLE_SUPPORT:
+            conf_info_table = prettytable.PrettyTable(title="Configuration File Information", header=False)
+            for k, v in self.conf().items():
+                conf_info_table.add_row(
+                    (
+                        k,
+                        v if k != "parser_version" else "v{}".format('.'.join(map(str, v)))
+                    )
+                )
+
+            print(conf_info_table)
+
+        else:
+            print("Configuration File Information:")
+            print()
+            for k, v, in self.conf():
+                print(f"{k}: {v if k != 'parser_version' else 'v{}'.format('.'.join(map(str, v)))}")
+
+            print()
+
+
+class AdvancedConfigManager(ConfigManager):
+    def __init__(self, config_path: str):
+        """
+        The initialization method of AdvancedConfigManager() class.
+        This class handles interactions between the user and ConfigHandler.
+
+        :param config_path: The path to the configuration file to open.
+        """
+
+        super().__init__(config_path)
+        self.conf: Advanced = Advanced(
+            config_path=config_path,
+            encoding=info.defaults["encoding"]
+        )
+
+    def updateSettingsAvailableOptions(self, open_wizard: bool) -> dict[str, str]:
+        return {'s': f"Toggle strict mode (Current: {self.conf.strict})"}
+
+    def updateSettingsOptionBehaviors(self, open_wizard: bool) -> dict[str, Callable]:
+        return {'s': self._setOption_strict}
+
+    def _setOption_strict(self, open_wizard: bool):
+        """Used in self.settings() method."""
+        self.conf.strict = not self.conf.strict
+
+    def buildHelpMenu(self, **kwargs) -> str:
+        additional_commands = {
+            "strict": "Toggle strict mode of the configuration file.",
+            "passwd": "Set the password of the configuration file."
+        }
+        return super().buildHelpMenu(additional_commands)
+
+    def _setCommand_strict(self, command: list) -> None:
+        self.conf.strict = not self.conf.strict
+        print("Strict mode is enabled." if self.conf.strict else "Strict mode is disabled.")
+
+    def _setCommand_passwd(self, command: list) -> None:
+        self.conf.config_pass = utils.getConfigurationFilePassword(set_new_pass=False)
+        print("Password set.")
+
+    def updateCommandModeBehaviors(self) -> Dict[str, Callable]:
+        return {
+            "strict": self._setCommand_strict,
+            "passwd": self._setCommand_passwd
+        }
+
+    def _getConfigPass(self) -> str:
+        """
+        Ask user for configuration file password if encryption is not None.
+        """
+
+        self.conf.load(True)
+        if self.conf.encryption is not None:
+            self.conf.config_pass = utils.getConfigurationFilePassword(set_new_pass=False)
+
+        print()
+
+    def startCommandMode(self) -> None:
+        """
+        Start an interactive session in "command" mode.
+        """
+
+        self._getConfigPass()
+        for k, v in self.conf().items():  # Show configuration information
+            print(f"{k}: {v if k != 'parser' else 'v{0}'.format('.'.join(map(str, v['version'])))}")
+
+        return super().startCommandMode()
+
+    def start(self) -> None:
+        self._getConfigPass()
+        return super().start()
+
+    def showConfigInfo(self) -> None:
+        """
+        Print self.conf information
+        """
+
+        if _PRETTYTABLE_SUPPORT:
+            conf_info_table = prettytable.PrettyTable(title="Configuration File Information", header=False)
+            for k, v in self.conf().items():
+                conf_info_table.add_row(
+                    (
+                        k,
+                        v if k != 'parser' else 'v{0}'.format('.'.join(map(str, v['version'])))
+                    )
+                )
+
+            print(conf_info_table)
+
+        else:
+            print("Configuration File Information:")
+            print()
+            for k, v, in self.conf():
+                print(f"{k}: {v if k != 'parser' else 'v{0}'.format('.'.join(map(str, v['version'])))}")
+
+            print()
+
+
 def openConfig() -> None:
     """
     Open an existing configuration file.
@@ -637,10 +838,7 @@ def openConfig() -> None:
                 return
 
             elif config_type == 'a':
-                # TODO
-                # AdvancedConfigManager(config_path)()
-                print("WIP")
-                _ui.confirm()
+                AdvancedConfigManager(config_path)()
                 return
 
         except (KeyboardInterrupt, EOFError):

@@ -34,20 +34,10 @@ from config_handler import info
 
 
 def clearScreen() -> None:
-    """
-    Clears the screen.
-    """
-
     os.system("cls" if os.name == "nt" else "clear")
 
 
 def confirm(message: str = "Press enter to continue...") -> None:
-    """
-    Wait for user input.
-
-    :param message: The message to show to the user.
-    """
-
     input(message)
 
 
@@ -171,7 +161,7 @@ class Choices:
         self.case_sensitive = case_sensitive
         self.input_prompt = input_prompt
 
-    def __call__(self) -> str:
+    def __call__(self, prompt_only: bool = False) -> str:
         """
         Show the dialog to the user and return the choice they make.
 
@@ -182,7 +172,9 @@ class Choices:
             if self.clear_screen:
                 clearScreen()
 
-            print(self.__buildDialog())
+            if not prompt_only:
+                print(self.__buildDialog())
+
             choice = input(self.input_prompt)  # Get the user's choice.
             if self.case_sensitive:
                 if choice in self.list_of_choices.keys():
