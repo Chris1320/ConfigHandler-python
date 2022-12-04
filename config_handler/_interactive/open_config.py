@@ -25,7 +25,9 @@ SOFTWARE.
 """
 
 import os
+import json
 import shlex
+
 from abc import ABC
 from abc import abstractmethod
 from typing import Any
@@ -37,6 +39,7 @@ from typing import Optional
 
 from config_handler import _ui
 from config_handler import info
+from config_handler import exceptions
 from config_handler.simple import Simple
 from config_handler.advanced import Advanced
 from config_handler._interactive import utils
@@ -314,7 +317,11 @@ When the value you entered cannot be converted, the program will raise an error.
                     print()
 
                 elif command[0] == "load":
-                    self.conf.load()
+                    try:
+                        self.conf.load()
+
+                    except Exception as e:
+                        print(f"[E] Cannot open configuration file: {e}")
 
                 elif command[0] == "save":
                     try:
@@ -400,7 +407,7 @@ When the value you entered cannot be converted, the program will raise an error.
                     command_behaviors[command[0]](command)
 
             except Exception as e:
-                print(f"[ERROR] {e}")
+                print(f"[E] {e}")
 
     def start(self) -> None:
         """
@@ -415,13 +422,13 @@ When the value you entered cannot be converted, the program will raise an error.
                 break
 
             except Exception as e:
-                print(f"[ERROR] Cannot open configuration file: {e}")
-                self.exit = True
+                print(f"[E] Cannot open configuration file: {e}")
                 if _ui.Choices(
                     list_of_choices={'y': "Yes", 'n': "No", '': "Default"},
                     input_prompt="Do you want to try to load the configuration file again? (Y/n) > ",
                     clear_screen=False
                 )(True).lower() == 'n':
+                    self.exit = True
                     return
 
         while True:
@@ -461,7 +468,7 @@ When the value you entered cannot be converted, the program will raise an error.
                         self.conf.load()  # Reload configuration file contents.
 
                     except FileNotFoundError as e:
-                        print(f"[ERROR] {e}")
+                        print(f"[E] {e}")
                         _ui.confirm()
 
                 elif choice == 's':
@@ -488,7 +495,7 @@ When the value you entered cannot be converted, the program will raise an error.
                         )
 
                     except ValueError as e:
-                        print(f"[ERROR] {e}")
+                        print(f"[E] {e}")
                         _ui.confirm()
 
                     except KeyboardInterrupt:
@@ -507,7 +514,7 @@ When the value you entered cannot be converted, the program will raise an error.
                         )
 
                     except KeyError:
-                        print("[ERROR] Key does not exist.")
+                        print("[E] Key does not exist.")
                         _ui.confirm()
 
                 elif choice == 'q':
@@ -515,6 +522,10 @@ When the value you entered cannot be converted, the program will raise an error.
 
             except KeyboardInterrupt:
                 pass
+
+            except PermissionError as e:
+                print(f"[E] {e}")
+                _ui.confirm()
 
     @abstractmethod
     def showConfigInfo(self) -> None:
@@ -720,8 +731,26 @@ class AdvancedConfigManager(ConfigManager):
         try:
             super().__call__()
 
-        except FileNotFoundError:
-            pass  # Prevent the program from having an unhandled (critical) exception.
+        except (FileNotFoundError, IOError, EOFError) as e:
+            print(f"[E] {e}")
+            _ui.confirm()
+
+        except json.JSONDecodeError as e:
+            print(f"[E] {e}")
+            print("[i] Please make sure that the file is a valid configuration file.")
+            _ui.confirm()
+
+        except (
+            exceptions.ChecksumError,
+            exceptions.InvalidConfigurationFileError
+        ) as e:
+            print(f"[E] {e}")
+            print("[i] The configuration file might be corrupted or has been altered.")
+            _ui.confirm()
+
+        except Exception as e:
+            print(f"[E] {e}")
+            _ui.confirm()
 
     def updateSettingsAvailableOptions(self, open_wizard: bool) -> dict[str, str]:
         return {'s': f"Toggle strict mode (Current: {self.conf.strict})"}
