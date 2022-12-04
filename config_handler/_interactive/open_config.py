@@ -457,7 +457,12 @@ When the value you entered cannot be converted, the program will raise an error.
                     return
 
                 elif choice == 'd':
-                    self.conf.load()  # Reload configuration file contents.
+                    try:
+                        self.conf.load()  # Reload configuration file contents.
+
+                    except FileNotFoundError as e:
+                        print(f"[ERROR] {e}")
+                        _ui.confirm()
 
                 elif choice == 's':
                     self.conf.save()
@@ -493,12 +498,17 @@ When the value you entered cannot be converted, the program will raise an error.
                     self.configBrowser()
 
                 elif choice == 'r':
-                    self.conf.remove(
-                        _ui.InputBox(
-                            title="Remove an existing key/value pair.",
-                            description="Enter the name of the key to remove. (CTRL+C to cancel)"
-                        )()
-                    )
+                    try:
+                        self.conf.remove(
+                            _ui.InputBox(
+                                title="Remove an existing key/value pair.",
+                                description="Enter the name of the key to remove. (CTRL+C to cancel)"
+                            )()
+                        )
+
+                    except KeyError:
+                        print("[ERROR] Key does not exist.")
+                        _ui.confirm()
 
                 elif choice == 'q':
                     return self.settings()
@@ -705,6 +715,13 @@ class AdvancedConfigManager(ConfigManager):
             config_path=config_path,
             encoding=info.defaults["encoding"]
         )
+
+    def __call__(self) -> None:
+        try:
+            super().__call__()
+
+        except FileNotFoundError:
+            pass  # Prevent the program from having an unhandled (critical) exception.
 
     def updateSettingsAvailableOptions(self, open_wizard: bool) -> dict[str, str]:
         return {'s': f"Toggle strict mode (Current: {self.conf.strict})"}
