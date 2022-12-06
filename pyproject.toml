@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ConfigHandler-python"
+description = "Create, update, and remove values from a configuration file made by ConfigHandler."
+readme = "README.md"
+requires-python = ">=3.10"
+
+authors = [{name="Chris1320", email="chris1320is@protonmail.com"}]
+license = {text = "MIT"}
+classifiers = [  # https://pypi.org/pypi?%3Aaction=list_classifiers
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dynamic = ["version"]
+
+[project.urls]
+"Repository" = "https://github.com/Chris1320/ConfigHandler-python"
+
+[project.optional-dependencies]
+full = [
+    "pycryptodomex==3.15.0",
+    "prettytable==3.5.0",
+    "lz4==4.0.2"
+]
+test = [
+    "pytest==7.2.0",
+    "pytest-cov==4.0.0",
+    "pytest-benchmark==4.0.0"
+]
+
+[project.scripts]
+config_handler = "config_handler.__main__:main"
+
+[tool.setuptools]
+packages = ["config_handler"]
+
+[tool.setuptools.dynamic]
+version = {attr = "config_handler.__version__"}
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cache-clear --color=yes --code-highlight=yes --cov=config_handler -vvv"
+testpaths = [
+    "tests"
+]
+pythonpath = [
+    "."
+]

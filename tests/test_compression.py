@@ -24,29 +24,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import random
+import string
 
-class ChecksumError(Exception):
-    """
-    Exception raised when the checksum of the dictionary is invalid.
-    """
-
-    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
-        super().__init__(message)
+from config_handler.advanced import compression
 
 
-class ConfigFileNotInitializedError(Exception):
-    """
-    Exception raised when the configuration file has not yet been initialized.
-    """
+class TestAdvancedCompressions:
+    def testZLib(self):
+        for _ in range(0, 10):
+            text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
+            compressed = compression.compress(text, "zlib")
+            assert text == compression.decompress(compressed, "zlib")
 
-    def __init__(self, message: str = "The configuration file has not yet been initialized."):
-        super().__init__(message)
-
-
-class InvalidConfigurationFileError(Exception):
-    """
-    Exception raised when the configuration file is unable to be loaded.
-    """
-
-    def __init__(self, message: str = "The configuration file is invalid or corrupted."):
-        super().__init__(message)
+    def testLZ4(self):
+        for _ in range(0, 10):
+            text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
+            compressed = compression.compress(text, "lz4")
+            assert text == compression.decompress(compressed, "lz4")

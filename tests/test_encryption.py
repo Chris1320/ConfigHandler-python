@@ -24,29 +24,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import string
+import random
 
-class ChecksumError(Exception):
-    """
-    Exception raised when the checksum of the dictionary is invalid.
-    """
-
-    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
-        super().__init__(message)
+from config_handler.advanced import encryption
 
 
-class ConfigFileNotInitializedError(Exception):
-    """
-    Exception raised when the configuration file has not yet been initialized.
-    """
+class TestAdvancedEncryptions:
+    def testAES256(self):
+        key = ''.join(random.choices(string.ascii_letters, k=random.randint(8, 16)))
+        text = ''.join(random.choices(string.ascii_letters, k=random.randint(64, 128)))
 
-    def __init__(self, message: str = "The configuration file has not yet been initialized."):
-        super().__init__(message)
+        ciphertext = encryption.encrypt(text, "aes256", key)
 
-
-class InvalidConfigurationFileError(Exception):
-    """
-    Exception raised when the configuration file is unable to be loaded.
-    """
-
-    def __init__(self, message: str = "The configuration file is invalid or corrupted."):
-        super().__init__(message)
+        assert text == encryption.decrypt(ciphertext, "aes256", key)

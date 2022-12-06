@@ -24,29 +24,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-
-class ChecksumError(Exception):
-    """
-    Exception raised when the checksum of the dictionary is invalid.
-    """
-
-    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
-        super().__init__(message)
+from config_handler import info
 
 
-class ConfigFileNotInitializedError(Exception):
-    """
-    Exception raised when the configuration file has not yet been initialized.
-    """
-
-    def __init__(self, message: str = "The configuration file has not yet been initialized."):
-        super().__init__(message)
-
-
-class InvalidConfigurationFileError(Exception):
-    """
-    Exception raised when the configuration file is unable to be loaded.
-    """
-
-    def __init__(self, message: str = "The configuration file is invalid or corrupted."):
-        super().__init__(message)
+def testConfigHandlerInfo():
+    assert type(info.name) is str
+    assert type(info.version) is tuple
+    assert len(info.version) == 3
+    assert info.release in ("stable", "beta", "dev")

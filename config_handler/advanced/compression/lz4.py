@@ -24,29 +24,27 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+try:
+    import lz4.frame
 
-class ChecksumError(Exception):
+except ImportError:
+    available: bool = False
+
+else:
+    available: bool = True
+
+
+def compress(data: bytes) -> bytes:
     """
-    Exception raised when the checksum of the dictionary is invalid.
-    """
-
-    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
-        super().__init__(message)
-
-
-class ConfigFileNotInitializedError(Exception):
-    """
-    Exception raised when the configuration file has not yet been initialized.
-    """
-
-    def __init__(self, message: str = "The configuration file has not yet been initialized."):
-        super().__init__(message)
-
-
-class InvalidConfigurationFileError(Exception):
-    """
-    Exception raised when the configuration file is unable to be loaded.
+    Compress the data.
     """
 
-    def __init__(self, message: str = "The configuration file is invalid or corrupted."):
-        super().__init__(message)
+    return lz4.frame.compress(data)
+
+
+def decompress(data: bytes) -> bytes:
+    """
+    Decompress the data.
+    """
+
+    return lz4.frame.decompress(data)

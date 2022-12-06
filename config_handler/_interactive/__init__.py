@@ -23,30 +23,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
-
-class ChecksumError(Exception):
-    """
-    Exception raised when the checksum of the dictionary is invalid.
-    """
-
-    def __init__(self, message: str = "The checksum of the dictionary does not match the previous checksum."):
-        super().__init__(message)
-
-
-class ConfigFileNotInitializedError(Exception):
-    """
-    Exception raised when the configuration file has not yet been initialized.
-    """
-
-    def __init__(self, message: str = "The configuration file has not yet been initialized."):
-        super().__init__(message)
-
-
-class InvalidConfigurationFileError(Exception):
-    """
-    Exception raised when the configuration file is unable to be loaded.
-    """
-
-    def __init__(self, message: str = "The configuration file is invalid or corrupted."):
-        super().__init__(message)

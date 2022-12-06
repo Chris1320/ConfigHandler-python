@@ -24,4 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from . import simple, advanced, info, exceptions
+from config_handler import info
+
+__version__ = '.'.join(map(str, info.version))

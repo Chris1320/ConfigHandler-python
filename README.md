@@ -9,16 +9,16 @@ Create, update, and remove values from a configuration file made by ConfigHandle
 
 ## Installation
 
-+ via pip: `pip install py-config-handler`
++ via pip: `pip install confighandler-python`
 + as a Git submodule: `git submodule add https://github.com/Chris1320/ConfigHandler-python.git`
 
 ### Requirements
 
 The following modules are optional:
 
-- `pycryptodomex`: AES-256 encryption
-- `prettytable`: Prettier layout in interactive mode
-- `lz4`: LZ4 compression support
++ `pycryptodomex`: AES256 encryption
++ `prettytable`: Prettier layout in interactive mode
++ `lz4`: LZ4 compression support
 
 ## Usage
 
@@ -28,21 +28,23 @@ The following modules are optional:
 
 ```python
 
-from config_handler.simple import Simple
+    from config_handler.simple import Simple
 
-config = Simple("test.conf")
+    config = Simple("test.conf")  # Create a new Simple ConfigHandler object.
 
-# Create a new configuration file by assigning key-value pair.
-config.set("foo", "bar")  # "foo" is the key, "bar" is the value.
-config.set("nums", 123)
-config.set("dec", 3.14)
-config.set("Aboolean", True)
-config.set("unintentional variable!", "unintentional value.")
+    # Add key-value pairs to the configuration file.
+    config["foo"] = "bar"  # "foo" is the key, "bar" is the value.
+    config["nums"] = 123
+    config["dec"] = 3.14
+    config["Aboolean"] = True
+    config["unintentional variable!"] = "unintentional value."
 
-# Remove values
-config.remove("unintentional variable!")
+    # Remove values
+    del config["unintentional variable!"]
 
-config.save()  # Save the data to the file.
+    print(config.exists)  # It will print `False` because the file does not exist yet.
+    config.save()  # Save the data to the file.
+    print(config.exists)  # It is now True.
 
 ```
 
@@ -50,27 +52,27 @@ config.save()  # Save the data to the file.
 
 ```python
 
-from config_handler.simple import Simple
+    from config_handler.simple import Simple
 
-config = Simple("test.conf")
+    config = Simple("test.conf")
 
-config.load()  # Load the data from the file.
+    config.load()  # Load the data from the file.
 
-# Get values from the loaded data.
-config.get("foo")  # "foo" is the key.
+    # Get values from the loaded data.
+    print(config["foo"])  # "foo" is the key.
 
-config.set("foo", "barred")  # Change value of a key.
-config.set("new_key", "new_value")  # Add a new key-value pair.
+    config["foo"] = "barred"  # Change value of a key.
+    config["new_key"] = "new_value"  # Add a new key-value pair.
 
-config.isbase64 = True  # Encode configuration file to Base64.
+    config.isbase64 = True  # Encode configuration file to Base64.
 
-# Save changes
-config.save()
+    # Save changes
+    config.save()
 
 ```
 
 A key can be any string, but must not start with a `#`, include a `=`, or include a `\n`.
-A value can be any string, integer, or float.
+A value can be any string, integer, float, or boolean.
 
 ### Advanced Mode
 
@@ -78,28 +80,28 @@ A value can be any string, integer, or float.
 
 ```python
 
-from config_handler.advanced import Advanced
+    from config_handler.advanced import Advanced
 
-config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
+    config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
 
-config.new(
-    name="Advanced Mode Test",
-    author="Chris1320",
-    compression="zlib",
-    encryption="aes256"
-)
+    config.new(  # Initialize a new configuration file.
+        name="Advanced Mode Test",
+        author="Chris1320",
+        compression="zlib",
+        encryption="aes256"
+    )
 
-# Create a new configuration file by assigning key-value pair.
-config.set("foo", "bar")  # "foo" is the key, "bar" is the value.
-config.set("nums", 123)
-config.set("dec", 3.14)
-config.set("Aboolean", True)
-config.set("unintentional variable!", "unintentional value.")
+    # Add key-value pairs to configuration file.
+    config["foo"] = "bar"  # "foo" is the key, "bar" is the value.
+    config["nums"] = 123
+    config["dec"] = 3.14
+    config["Aboolean"] = True
+    config["unintentional variable!"] = "unintentional value."
 
-# Remove values
-config.remove("unintentional variable!")
+    # Remove values
+    del config["unintentional variable!"]
 
-config.save()  # Save the data to the file.
+    config.save()  # Save the data to the file.
 
 ```
 
@@ -107,21 +109,22 @@ config.save()  # Save the data to the file.
 
 ```python
 
-from config_handler.advanced import Advanced
+    from config_handler.advanced import Advanced
 
-config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
+    config = Advanced("test.conf", "p4ssw0rd")  # Password is required when encryption is not None.
 
-# Load the data from the file.
-config.load()
+    # Load the data from the file.
+    config.load()
 
-# Get values from the loaded data.
-config.get("foo")  # "foo" is the key.
+    # Get values from the loaded data.
+    print(config["foo"])  # "foo" is the key.
 
-config.set("foo", "barred")  # Change value of a key.
-config.set("new_key", "new_value")  # Add a new key-value pair.
+    config["foo"] ="barred"  # Change value of a key.
+    config["new_key"] = "new_value"  # Add a new key-value pair.
 
-config.metadata()  # Get metadata of the configuration file.
+    config()  # Get metadata of the configuration file.
+              # This is formerly called as `config.metadata()`.
 
-config.save()  # Save changes
+    config.save()  # Save changes
 
 ```

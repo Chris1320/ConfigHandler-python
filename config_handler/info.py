@@ -24,13 +24,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-name = "ConfigHandler"
-version = (1, 0, 2)
-release = "beta"  # `stable`, `beta`, `dev`
-full_ver = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
+from typing import Any
+from typing import Dict
+from typing import Final
+from typing import Tuple
 
-if release == "stable":
-    title = f"{name} v{'.'.join(map(str, version))}"
+name: Final[str] = "ConfigHandler"
+version: Final[Tuple[int, int, int]] = (2, 0, 2)
+release: Final[str] = "beta"  # `stable`, `beta`, `dev`
+full_ver: Final[str] = f"{'.'.join(map(str, version))}-{release}"  # Version including release type.
+title: Final[str] = "{name} v{version}{release_suffix}".format(
+    name = name,
+    version = '.'.join(map(str, version)),
+    release_suffix = "" if release == "stable" else f"-{release}"
+)
 
-else:
-    title = f"{name} v{'.'.join(map(str, version))}-{release}"
+defaults: Dict[str, Any] = {
+    "encoding": "utf-8",
+    "browser_items_to_show": 10
+}
