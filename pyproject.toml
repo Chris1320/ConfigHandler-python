@@ -22,11 +22,6 @@ dynamic = ["version"]
 [project.urls]
 "Repository" = "https://github.com/Chris1320/ConfigHandler-python"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["config_handler*"]
-exclude = ["tests*"]
-
 [project.optional-dependencies]
 full = [
     "pycryptodomex==3.15.0",
@@ -41,6 +36,9 @@ test = [
 
 [project.scripts]
 config_handler = "config_handler.__main__:main"
+
+[tool.setuptools]
+packages = ["config_handler"]
 
 [tool.setuptools.dynamic]
 version = {attr = "config_handler.__version__"}
