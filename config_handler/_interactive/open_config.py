@@ -3,7 +3,7 @@
 
 """
 MIT License
-Copyright (c) 2020-2022 Chris1320
+Copyright (c) 2020-2023 Chris1320
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,7 @@ try:
     import prettytable
 
 except ImportError:
-    _PRETTYTABLE_SUPPORT: Final[bool] = False
+    _PRETTYTABLE_SUPPORT: Final[bool] = False  # type: ignore
 
 else:
     _PRETTYTABLE_SUPPORT: Final[bool] = True
@@ -783,7 +783,7 @@ class AdvancedConfigManager(ConfigManager):
             "passwd": self._setCommand_passwd
         }
 
-    def _getConfigPass(self) -> str:
+    def _getConfigPass(self) -> None:
         """
         Ask user for configuration file password if encryption is not None.
         """
